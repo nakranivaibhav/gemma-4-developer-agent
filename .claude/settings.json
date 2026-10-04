@@ -1,0 +1,28 @@
+{
+  "autoCompactWindow": 250000,
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{ f=$(jq -r '.tool_input.file_path // empty'); case \"$f\" in *.claude/agents/*.md) uv run tools/gen_codex_agents.py ;; esac; } 2>/dev/null || true",
+            "statusMessage": "Regenerating .codex/agents TOML"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/tools/autopilot_gate.py\"",
+            "statusMessage": "Autopilot gate: checking for pending work"
+          }
+        ]
+      }
+    ]
+  }
+}

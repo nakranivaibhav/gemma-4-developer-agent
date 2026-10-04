@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c 'touch /tmp/codex_hook_probe_$$; python3 \"$CODEX_PROJECT_DIR/tools/autopilot_gate.py\"'"
+          }
+        ]
+      }
+    ]
+  }
+}
