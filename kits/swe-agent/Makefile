@@ -21,7 +21,8 @@ NGRAM       ?= 1
 TIER        ?= adhoc
 NOTE        ?=
 STAMP       := $(shell date -u +%Y%m%dT%H%MZ)
-RUN         ?= $(notdir $(AGENT))_$(TASKS)_$(STAMP)
+# run name: agent_tasks_time; a list of task ids becomes "<n>tasks" so the name has no spaces
+RUN         ?= $(notdir $(AGENT))_$(if $(word 2,$(TASKS)),$(words $(TASKS))tasks,$(notdir $(TASKS)))_$(STAMP)
 PORT        := 8000
 BASE_IMAGE  := swebench-sandbox:latest
 IMAGE       := swebench-sandbox-local:latest
@@ -46,11 +47,11 @@ help: ## list the targets
 	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-11s %s\n", $$1, $$2}'
 
 setup: data model env sandbox ## everything, first time (needs Kaggle API keys in KAGGLE_USERNAME / KAGGLE_KEY)
+	$(PY) -I $(KIT)/run/manifest.py check
 
 data: ## competition data -> data/, competition wheelhouse -> data/external/wheelhouse
 	uv run tools/kaggle_io.py download $(SLUG) --dest data
 	uv run kaggle datasets download metric/gemma-4-developer-agent-wheelhouse -p data/external/wheelhouse --unzip
-	$(PY) -I $(KIT)/run/manifest.py check 2>/dev/null || true
 
 model: ## model weights for SIZE (e2b | e4b | 12b | 31b) from Hugging Face -> $(MODEL)
 	uvx --from huggingface_hub hf download $(HF_$(SIZE)) --local-dir $(MODEL)
@@ -63,7 +64,7 @@ env: ## the harness Python env ($(ENV_DIR)), exact versions from requirements.tx
 
 sandbox: ## the competition sandbox image, the local repaired image on top, the offline network, the setup hook
 	docker build -q -t $(BASE_IMAGE) -f data/docker/Dockerfile.sandbox data/docker
-	python3 $(KIT)/sandbox/fetch_wheels.py
+	uv run $(KIT)/sandbox/fetch_wheels.py
 	docker build -q -t $(IMAGE) $(KIT)/sandbox
 	docker network inspect $(NETWORK) >/dev/null 2>&1 || docker network create --internal --subnet 10.255.0.0/16 \
 	  --gateway 10.255.0.1 -o com.docker.network.bridge.enable_icc=false $(NETWORK)
