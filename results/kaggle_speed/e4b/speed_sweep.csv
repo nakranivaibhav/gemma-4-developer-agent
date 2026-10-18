@@ -1,0 +1,25 @@
+setting,requests_to,context,kind,rep,prompt_tokens,cached_tokens,out_tokens,first_token_s,total_s,decode_tok_s
+no_lora,base model,1000,cold,0,1000,,256,0.203,2.436,114.2
+no_lora,base model,1000,warm,0,1300,,256,0.077,2.331,113.16
+no_lora,base model,1000,cold,1,1000,,256,0.202,2.434,114.25
+no_lora,base model,1000,warm,1,1300,,256,0.077,2.331,113.14
+no_lora,base model,4000,cold,0,4000,,256,0.91,3.33,105.36
+no_lora,base model,4000,warm,0,4300,,256,0.084,2.526,104.44
+no_lora,base model,4000,cold,1,4000,,256,0.772,3.191,105.42
+no_lora,base model,4000,warm,1,4300,,256,0.085,2.525,104.47
+no_lora,base model,8000,cold,0,8000,,256,1.535,4.109,99.06
+no_lora,base model,8000,warm,0,8300,,256,0.096,2.693,98.2
+no_lora,base model,8000,cold,1,8000,,256,1.543,4.116,99.08
+no_lora,base model,8000,warm,1,8300,,256,0.096,2.692,98.22
+no_lora,base model,16000,cold,0,16000,,256,3.163,5.956,91.31
+no_lora,base model,16000,warm,0,16300,,256,0.118,2.918,91.09
+no_lora,base model,16000,cold,1,16000,,256,3.158,5.948,91.41
+no_lora,base model,16000,warm,1,16300,,256,0.118,2.915,91.17
+no_lora,base model,24000,cold,0,24000,,256,4.883,7.779,88.05
+no_lora,base model,24000,warm,0,24300,,256,0.141,3.048,87.71
+no_lora,base model,24000,cold,1,24000,,256,4.881,7.777,88.05
+no_lora,base model,24000,warm,1,24300,,256,0.141,3.045,87.8
+no_lora,base model,30000,cold,0,30000,,256,6.223,9.2,85.67
+no_lora,base model,30000,warm,0,30300,,256,0.159,3.142,85.46
+no_lora,base model,30000,cold,1,30000,,256,6.216,9.194,85.63
+no_lora,base model,30000,warm,1,30300,,256,0.158,3.141,85.5

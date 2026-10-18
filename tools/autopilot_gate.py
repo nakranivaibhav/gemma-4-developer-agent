@@ -58,6 +58,8 @@ def _read_control(comp: Path) -> dict:
 
 
 def _find_comp(root: Path) -> Path | None:
+    if (root / "journal.md").exists():  # a one-competition repo: the comp folder is the repo root
+        return root
     comps = sorted(
         (p for p in (root / "comps").glob("*/") if (p / "journal.md").exists()),
         key=lambda p: (p / "journal.md").stat().st_mtime,
@@ -130,12 +132,12 @@ def decide(root: Path) -> dict | None:
                 if built_files:
                     reason = (
                         f"{nid} has a partial build but no run.sh or SCORE — hand it "
-                        "back to kaggle-developer to finish the build and continue the round"
+                        "back to developer to finish the build and continue the round"
                     )
                 else:
                     reason = (
                         f"{nid} is registered but not built — hand it to "
-                        "kaggle-developer and continue the round"
+                        "developer and continue the round"
                     )
                 break
 
@@ -144,7 +146,7 @@ def decide(root: Path) -> dict | None:
         if not in_flight and s["nodes"]:
             last = s["rounds"][-1] if s["rounds"] else None
             if last is None or last["close"] is not None:
-                reason = "no round is open and nothing is running — open the next experiment round (/kaggle-experiment)"
+                reason = "no round is open and nothing is running — open the next experiment round (/experiment)"
 
     # 4) pre-experiment stages (full_auto only — earlier modes gate via the card sentinel)
     if reason is None and not s["nodes"] and ctl["autonomy"] == "full_auto":

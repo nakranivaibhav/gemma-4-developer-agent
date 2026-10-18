@@ -1,0 +1,8 @@
+task,resolved,agent_s,llm_calls,total_tokens,tool_calls,test_exit_code,status,error,wall_s,time_cap_min,server_setting
+httpx_3672,False,262.0,22,0,19,2,SUCCESS,,262.0,51.0,readme_lora
+fastapi_11194,True,314.2,30,0,26,0,SUCCESS,,314.2,46.6,readme_lora
+fastapi_14786,True,94.4,16,0,14,0,SUCCESS,,94.5,41.4,readme_lora
+fastapi_14430,False,514.8,37,0,34,2,SUCCESS,,514.9,39.8,readme_lora
+fastapi_12942,False,898.4,63,0,58,2,SUCCESS,,898.5,31.2,readme_lora
+fastapi_13537,True,208.3,14,0,12,0,SUCCESS,,208.4,16.3,readme_lora
+requests_7315,False,771.8,101,0,100,1,SUCCESS,Agent exceeded session timeout (12.785166259606676 min),771.8,12.8,readme_lora

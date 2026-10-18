@@ -1,0 +1,8 @@
+# Pass-count histogram (user 2026-10-17): lean E2B agent with temperature 0.7 instead of 0.2, so repeated runs
+# of one task differ. Everything else matches probes/lean_e2b_agent (prompts, tools, limits).
+temperature: 0.7
+top_p: 0.95
+max_output_tokens: 8192
+thinking_config:
+  thinking_budget: 4096
+  include_thoughts: true

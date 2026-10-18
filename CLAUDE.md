@@ -3,21 +3,33 @@
 Autonomous-but-supervised Kaggle competitor. A human pastes a competition link;
 you drive it to submissions, pausing only at gates. This file is the **per-turn
 contract** — the short form. The unabridged version, with the reasoning and the
-incidents behind each rule, is **`docs/PLAYBOOK.md`**; read it when a rule needs
+incidents behind each rule, is **`docs/autopilot/PLAYBOOK.md`**; read it when a rule needs
 its WHY or when you are about to change one. Stage *procedures* live in
 `.claude/skills/`, worker roles in `.claude/agents/` — those are the single home
 of their own detail; don't duplicate them here.
 
+## This repo: one competition, at the root
+This checkout holds one competition (Google - The Gemma 4 Developer Agent), so
+**the competition folder is the repo root**: wherever a skill or agent says
+`comps/<slug>/X`, read `X` at the root. It runs **without the node machinery**
+(no `nodes/`, `champion/`, `rounds/`, `state.md`): an experiment is a probe, an
+agent folder in `agents/` run over tasks from `tasks/manifest.csv` with
+`kits/swe-agent/`, logged as `PROBE` / `NOTE` lines in `journal.md`, with one row
+per task-run in `results/task_runs.jsonl`. The competition itself is summarised
+in `docs/competition.md`; results write-ups are indexed in `docs/README.md`.
+
 ## Drive it yourself
-The human never types `/kaggle-*`. On a pasted comp URL/slug, run the stages in
-order, advancing automatically: **kaggle-start → kaggle-eda → kaggle-validate →
-kaggle-baseline → kaggle-experiment** (terminal — grind forever).
-`kaggle-status` is read-only and also the resume entry. `kaggle-kernel` publishes
-a node as a private notebook — on request only. `kaggle-study` walks a top
+The human never types the stage commands. On a pasted comp URL/slug, run the stages in
+order, advancing automatically: **start → eda → validate →
+baseline → experiment** (terminal — grind forever).
+`progress` is read-only and also the resume entry. `kernel` publishes
+a node as a private notebook — on request only. `study` walks a top
 solution with the human (3D page + chat) after a comp — on request only.
 
-- Fresh session: `uv run tools/render_state.py comps/<slug>`, read `state.md`,
-  resume at the first unticked stage. Never restart a finished stage.
+- Fresh session: in this repo, read the journal tail (`tools/jgrep.sh journal.md
+  <pat>`) and `docs/README.md`. In a node-based comp, `uv run tools/render_state.py
+  comps/<slug>`, read `state.md`, resume at the first unticked stage. Never
+  restart a finished stage.
 - After each stage: append `STAGE <name> done`, re-render.
 - **Never decide to stop.** A plateau means look outside (public notebooks,
   discussions, arXiv) and draft a fresh lever — never wind down. The deadline is
@@ -25,14 +37,14 @@ solution with the human (3D page + chat) after a comp — on request only.
 
 ## Gates and the autonomy dial
 Gates in order: `understand · toolkit · eda · validation · experiment_plan · submit`.
-The dial lives in `comps/<slug>/control.md`: `interactive` (pause at every gate) ·
+The dial lives in `control.md`: `interactive` (pause at every gate) ·
 `auto_except_submit` (pause at understand + submit) · `full_auto` (pause at
 nothing). Update it when the human says "go auto" / "ask me before submitting" /
 "pause" (`halt: true`).
 
-Every gate ends in a **Decision Card** — format in `docs/DECISION_CARDS.md`.
+Every gate ends in a **Decision Card** — format in `docs/autopilot/DECISION_CARDS.md`.
 Write for a smart non-specialist: plain language, numbers and file paths, never
-in-chat thumbnails as proof. When you WAIT, `touch comps/<slug>/.waiting-on-human`
+in-chat thumbnails as proof. When you WAIT, `touch .waiting-on-human`
 first and remove it the moment they answer.
 
 `tools/autopilot_gate.py` is a **Stop hook** in both harnesses: it reads disk at
@@ -67,19 +79,23 @@ zero journal growth).
     tokens in one tool result. Use `tools/jgrep.sh <journal> <pat>`, then
     `sed -n 'Np'` for one full line. Same for logs.
 
-## Layout — one written truth, one generated view
+## Layout
 ```
-comps/<slug>/
-  journal.md    APPEND-ONLY source of truth. One line per state change; nothing
-                is ever edited. Grammar: tools/render_state.py docstring.
-  state.md      GENERATED (tools/render_state.py). Never hand-edited — wrong ⇒
-                re-render ⇒ still wrong ⇒ append a CORRECT line.
-  control.md    the human's file: dial + halt.     spec.md   the contract (+ yaml block)
-  eda.md  validation.md  folds.json                rounds/round_NNNN/  disk contract
-  lines/<name>/ orchestrator-run exploration line (scripts + running log)
-  refs/  probes/  src/  champion/  data/
-  nodes/node_NNNN/{node.md, src/, train.log, submission.csv, oof.npy, test_probs.npy}
+journal.md      APPEND-ONLY source of truth. One line per state change; nothing
+                is ever edited — a mistake gets a CORRECT line. Grammar:
+                tools/render_state.py docstring.
+control.md      the human's file: dial + halt.
+agents/         every agent folder we ran (agent.yaml + prompts + configs)
+tasks/          manifest.csv: one row per task (split, lists, setup links)
+results/        task_runs.jsonl (the run ledger) + small summaries
+kits/swe-agent/ the run machinery: Makefile, sandbox, serve, run, check, bench
+graph/ analysis/ training/   research code      docs/   write-ups
+data/ runs/ envs/ refs/      LOCAL ONLY (gitignored): data, run outputs, envs
 ```
+A node-based comp (tabular etc.) uses the `comps/<slug>/` layout in
+`docs/autopilot/PLAYBOOK.md` instead: `state.md` (generated), `spec.md`,
+`folds.json`, `rounds/`, `nodes/node_NNNN/`, `champion/`.
+
 **Every markdown artifact carries its own contract** as an HTML comment at the
 top — obey the contract of any file you edit. Journal appends happen **only in
 the main session**; workers write their own `node.md` + artifacts and report a
@@ -101,7 +117,7 @@ Champion = best **valid** node anywhere (best CV in the official direction,
 leakage-clean); on promotion byte-copy `src/` + `submission.csv` into `champion/`.
 **Keep ≥2 families alive** — if the best lineage hasn't beaten 1·parent-SEM over
 5 consecutive improves, force a draft of a different approach. The full search
-policy lives in `.claude/agents/kaggle-proposer.md`.
+policy lives in `.claude/agents/proposer.md`.
 
 `REGISTER` carries `uses_data: [fs_*]`; each engineered set is one `FEATURESET`
 line with a **leak-safety class** — `stateless` (row-wise, no `.fit`, no target,
@@ -110,12 +126,12 @@ transform *or* cross-row stat — built inside each train fold only, never on fu
 train or test).
 
 ## Validation, leakage, promotion
-Freeze the CV **once** at `/kaggle-validate` and never re-split — a different
+Freeze the CV **once** at `/validate` and never re-split — a different
 seed or scheme is auto-rejected. Carve an inviolable holdout, never touched in
 training or feature-fit. Every transform fits **inside the train fold only**.
 
 The developer's fast self-checks (seconds, never a training run) are inline in
-`.claude/agents/kaggle-developer.md` — their single home. Clean ⇒ `status: valid`;
+`.claude/agents/developer.md` — their single home. Clean ⇒ `status: valid`;
 any leak or failed check ⇒ `status: buggy` and **the CV does not count**. Group
 and temporal leakage are prevented upstream by `folds.json`. Adversarial
 validation is a one-off diagnostic for an unexplained CV↔LB gap, never per node.
@@ -134,11 +150,12 @@ probe, logged `PROBE` in the note column, ~2/day.
 
 ## Budget
 ```bash
-lim=$(grep -oP 'daily_submission_limit:\s*\K\d+' comps/<slug>/spec.md)
-uv run tools/kaggle_io.py budget --ledger comps/<slug>/journal.md --limit "$lim"
+lim=$(grep -oP 'daily_submission_limit:\s*\K\d+' docs/competition.md)
+uv run tools/kaggle_io.py budget --ledger journal.md --limit "$lim"
 ```
 Derived at read time from today's `SUBMIT` lines; resets 00:00 UTC. **Never
-assume the daily limit** — it is asked at kaggle-start and stored in `spec.md`.
+assume the daily limit** — it is asked at start and stored in `docs/competition.md`
+(`spec.md` in a node-based comp).
 
 ## Kaggle gotchas
 Set `KAGGLE_USERNAME`/`KAGGLE_KEY` **before** any kaggle call (the client
@@ -161,10 +178,10 @@ times one unit: ≲15 min ⇒ run inline; longer ⇒ write `run.sh`, return
 `status=ready_to_run`, do **not** launch. The **orchestrator** launches, `setsid`
 -detached so it survives the session's death:
 ```bash
-DONE=/tmp/<slug>_node_NNNN.done ; rm -f "$DONE"
+DONE=/tmp/<run>.done ; rm -f "$DONE"
 setsid nohup uv run tools/run_with_watchdog.py \
-  --log comps/<slug>/nodes/node_NNNN/train.log --marker "$DONE" \
-  --idle-seconds 900 -- bash comps/<slug>/nodes/node_NNNN/run.sh \
+  --log runs/logs/<run>.log --marker "$DONE" \
+  --idle-seconds 900 -- bash kits/swe-agent/run/run_round.sh <agent_dir> <run> <tasks> \
   >/dev/null 2>&1 < /dev/null &
 ```
 Then append the `LAUNCH` line. The wake is a separate cheap **marker-waiter** —
@@ -187,10 +204,10 @@ and **all GATE jobs on finished runs**. Self-built work gets checked *harder*,
 because no second pair of eyes saw it.
 
 **DELEGATE** only for what a worker uniquely provides:
-`kaggle-proposer` when the question is *"what should we even try?"* — a plateau,
+`proposer` when the question is *"what should we even try?"* — a plateau,
 an exhausted family, a direction choice, or you catch yourself repeating a motif;
-`kaggle-proposal-reviewer` for its single adversarial hardening pass;
-`kaggle-developer` for GPU/long builds, parallelism (`isolation: worktree`),
+`proposal-reviewer` for its single adversarial hardening pass;
+`developer` for GPU/long builds, parallelism (`isolation: worktree`),
 fresh-context isolation, or a holdout/leak-sensitive node.
 
 The round is a single-pass disk contract in `rounds/round_NNNN/`: proposer →
@@ -214,9 +231,10 @@ process ⇒ `SCORE … status=dead`, move on.
 `MEMORY.md` at the repo root is the cross-competition case bank — retrieve before
 proposing, retain after any promotion or hard-won failure, one line at a time,
 written by the orchestrator at the decide step. It is deliberately **local and
-never committed**. `.gitignore` is deny-by-default: only `.claude/`, `docs/`,
-`tools/`, `comps/.gitkeep` and the root `CLAUDE.md`/`README.md`/`pyproject.toml`/
-`uv.lock` are re-included. A new root file needs an explicit `!` exception.
+never committed**. `.gitignore` is deny-by-default: only the folders and root
+files listed in it are re-included (code, agents, tasks, results, docs, the
+journal); data, run outputs, envs and secrets stay local. A new root file or
+folder needs an explicit `!` exception.
 
 Score quality via the **official metric on a trustworthy local CV** is the
 target; the public LB is the out-of-distribution check. Be honest in the journal:

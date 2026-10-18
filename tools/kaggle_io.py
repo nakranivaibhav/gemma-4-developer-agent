@@ -62,7 +62,7 @@ _HUMAN_HINT = {
     "notebooks_only": (
         "400 FAILED_PRECONDITION — this competition only accepts submissions "
         "from Notebooks. A CSV upload can never succeed here, on any client "
-        "version. Submit via the kernel path (kaggle-kernel skill) instead. "
+        "version. Submit via the kernel path (kernel skill) instead. "
         "No quota is consumed by the rejection."
     ),
     "rules_not_accepted": (

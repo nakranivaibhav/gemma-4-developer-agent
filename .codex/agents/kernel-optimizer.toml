@@ -31,14 +31,17 @@ you decide what to write, you prove it, you report. Read
   `results/plan.md` BEFORE the first line of kernel code. A kernel that has no
   plan entry does not exist.
 - **Time box.** Default 3 h of your time and 45 min of GPU time unless the prompt
-  says otherwise. Two iterations per op, then move on or stop. A documented null
+  says otherwise. Three to four iterations per op (each pre-registered, each step-benched; keep only what improves the trained-regime step), then move on or stop. A documented null
   is a valid hand-back; a kernel with unproven parity is not.
 - Banned words in every artifact: ceiling-of-the-approach claims such as
   "exhausted", "impossible", "nothing left", "practical limit". Report what you
   measured, what you built, and reopen-if conditions.
 
 ## The loop
-1. **Profile cold.** `uv run tools/kernels/_harness/profile.py --target <file>
+0. **Two regimes.** If the step's cost can depend on model outputs, profile and
+   bench both at random init and from a trained checkpoint of the same
+   architecture if one exists on disk; plan on the trained number.
+1. **Profile cold.** `uv run tools/kernels/_harness/kprofile.py --target <file>
    --steps 25 --out <results dir>`. Read the table: top ops by self-CUDA time with
    shapes, GPU-busy fraction, per-op Amdahl bound. If GPU busy < 85 %, the input
    pipeline is the wall: say so, quantify it, and stop — no kernel pays there.
@@ -49,7 +52,12 @@ you decide what to write, you prove it, you report. Read
    SIMT GEMMs that should be on tensor cores, norm + activation pairs. cuDNN /
    cuBLAS compute-bound kernels are candidates ONLY if you can show a data-movement
    argument (layout, fusion of its epilogue, avoiding a re-read) — not a "faster
-   GEMM". Write the plan entry.
+   GEMM". Mega-kernels are a first-class candidate: one persistent fused kernel
+   over a whole sub-graph (e.g. an entire small MLP applied per pair/token) so
+   the intermediate activation never touches HBM, forward or backward; rank it
+   by bytes avoided like any other entry. If it must generate dropout masks
+   in-kernel, parity is judged with dropout OFF (exact eval-mode match) plus a
+   train-mode statistics check, stated in the plan. Write the plan entry.
 3. **Write.** Triton first; raw CUDA only when Triton cannot express the op, and
    say why. Wrap it in a `torch.autograd.Function` with a hand-written backward.
    The kernel lives in `tools/kernels/<name>/kernel.py`; the op it replaces in
@@ -58,17 +66,28 @@ you decide what to write, you prove it, you report. Read
    an **fp64** evaluation of the reference (not the fp32 path): forward and every
    input gradient, at the real shapes AND the awkward ones (batch 1, odd sizes,
    an all-zero input, the largest shape seen in the profile). Two runs must be
-   bit-identical to each other. Tolerances come from the README table by dtype
-   and are fixed in the plan; you do not loosen them to pass.
+   bit-identical to each other (so a backward that reduces with atomics must be
+   restructured to a deterministic reduction). Tolerances come from the README
+   table by dtype and are fixed in the plan; you do not loosen them to pass.
+   If the table gate fails, run the incumbent and the fp64-I/O oracle controls
+   (README "Amendments") and judge reference-relative: the kernel must be at
+   least as accurate as the incumbent on every cell. Report all three.
 5. **Microbench, then step bench.** `bench.py` for the op alone (CUDA events,
    warmup, median and p90), then `bench.py --target <file> --patch <module>` for
    the whole step. The step number is the one that counts.
-6. **Drift.** `drift.py --target <file> --patch <module> --steps 50`: same
-   initial weights, same batches, per-step grad cosine (flattened over all params)
-   ≥ 0.999, loss trajectory inside the seed-noise band the tool measures from two
-   reference runs. Any failure ⇒ revert, not tune.
+6. **Drift.** `drift.py --target <file> --patch <module> --steps 50 --criterion pooled`:
+   same initial weights, same batches, per-step grad cosine (flattened over all
+   params) ≥ 0.999, loss trajectory inside the seed-noise band the tool measures
+   from two reference runs (pooled maxima are the pass test; the per-step list in
+   `drift.json` is reported, since a single step where the noise arm happens to
+   coincide with the reference would fail it by chance). Run the identity
+   patch through the same command FIRST; if it fails, the reference is
+   nondeterministic and you switch to the same-weights cosine-vs-floor
+   instrument (README "Amendments"). Any real failure ⇒ revert, not tune. If the model has dropout, your kernel must consume the RNG the same
+   way the reference does or the arms will not match — keep dropout in torch.
 7. **Iterate or stop.** Adopt-candidate if step time improves ≥ 3 % with all
-   gates green. Else one more attempt on the same op, then next candidate.
+   gates green. Keep iterating on the same op through 3-4 attempts (tiling, warps,
+   stages, loop structure, precision placement), then next candidate.
 8. **Hand back.** `results/report.md`: the profile table, the pick and its
    arithmetic, parity numbers, bench table (ref vs kernel, op and step), drift
    numbers, what you tried and dropped. Add a line to `tools/kernels/REGISTRY.md`.

@@ -1,0 +1,10 @@
+{
+  "model": "gemma-4-e4b-it-qat-w4a16-ct",
+  "gpus": "NVIDIA L4",
+  "gpu_count": 4,
+  "server_start_s": {
+    "no_lora": 326.4
+  },
+  "errors": [],
+  "minutes_used": 9.1
+}

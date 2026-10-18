@@ -1,0 +1,9 @@
+# Reference model (not submittable): Qwen3.8-27B NVFP4. Thinking-mode sampling from its model card
+# (temperature 1.0, top_p 0.95, top_k 20); output and thinking limits kept the same as the Gemma lean agents.
+temperature: 1.0
+top_p: 0.95
+top_k: 20
+max_output_tokens: 8192
+thinking_config:
+  thinking_budget: 4096
+  include_thoughts: true

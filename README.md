@@ -1,197 +1,74 @@
-# grandmaster
+# Gemma 4 Developer Agent
 
-A **human-in-the-loop, markdown-driven Kaggle solver that runs inside Claude
-Code.** You paste a competition link; Claude takes it from understanding the
-problem all the way to submissions — pausing at the right moments for you and
-grinding autonomously in between.
+Our working repo for the Kaggle competition
+[Google - The Gemma 4 Developer Agent](https://www.kaggle.com/competitions/gemma-4-developer-agent): a coding
+agent built on Gemma 4 that gets a real Python repository plus an issue, works in an offline sandbox, and must
+produce a patch that makes the hidden tests pass. The competition is summarised in [docs/competition.md](docs/competition.md).
 
-There is almost no application here. The "program" is **markdown**: a standing
-playbook ([`CLAUDE.md`](CLAUDE.md)), per-stage **skills**, parallel **subagents**,
-and one **workflow** for the proposer↔critic refinement loop. The only real code is a thin
-`tools/` of reusable `uv run` scripts (folds, Kaggle I/O, submission validation);
-leakage is the `kaggle-developer` subagent's own fast self-check, not a tool.
-Everything competition-specific — the data pipeline, the
-features, the models — is **bootstrapped per competition** into `comps/<slug>/`,
-never pinned globally.
+Everything here is shared as it is: the agents we ran, the local evaluation setup, every task-run result, the
+research log, and the Claude Code autopilot that drove the work. Shared publicly under the competition rules
+(code shared with all participants, Apache-2.0).
 
-[`CLAUDE.md`](CLAUDE.md) is the full playbook (autonomy dial, Decision Card
-format, stage flow, graph semantics, leakage discipline, resume model, budget
-rules). This README is the practical front door.
+## Results so far (local, repaired sandbox, 123 usable public tasks)
 
----
-
-## 1. One-time setup
-
-```bash
-uv sync                 # install the tools/ deps (pandas, numpy, sklearn)
-uv add kaggle           # the Kaggle CLI, used by tools/kaggle_io.py
-
-cp .env.example .env     # then open .env and paste in your Kaggle creds
-```
-
-Your **`.env`** (git-ignored, never committed) holds two values from
-kaggle.com → **Settings → "Create New Token"**:
-
-```
-KAGGLE_USERNAME=your-handle
-KAGGLE_KEY=your-api-key
-```
-
-Load it before running — export into your shell, or pass it to `uv`:
-
-```bash
-export $(grep -v '^#' .env | xargs)                    # load creds into the shell, OR
-uv run --env-file .env tools/kaggle_io.py --selftest   # load per-command
-```
-`--selftest` checks auth handling + the budget reader.
-
-### Two human gates that cannot be automated
-
-Per competition, you (the human) must do these in a browser — Claude will surface
-them and **stop**, it will not retry around them:
-
-1. **Accept the competition rules** on the competition page.
-2. **Phone-verify** your Kaggle account (required for GPU/internet on kernels).
-
-If either is missing, downloads and submits return **403** — which means "rules
-not accepted / unverified," *not* bad credentials (the #1 misdiagnosis).
-`uv run tools/kaggle_io.py classify-error --text "<error>"` maps it for you.
-
----
-
-## 2. Quickstart
-
-Inside a Claude Code session in this repo, **just paste the competition link** —
-Claude reads [`CLAUDE.md`](CLAUDE.md) and drives the whole pipeline itself (start →
-eda → validate → baseline → experiment → final), pausing only at the gated
-**Decision Cards** per the autonomy dial. You do **not** need to type the
-`/kaggle-*` commands; they're listed here only because you can also run or re-run a
-single stage by hand.
-
-```
-/kaggle-start <competition-url-or-slug>   # stage 0 — bootstrap comps/<slug>/, spec.md, download data
-/kaggle-eda                               # stage 1 — understand + clean the data
-/kaggle-validate                          # stage 2 — freeze the CV (folds.json) + holdout
-/kaggle-baseline                          # stage 3 — dumb baseline → first submission → champion/
-/kaggle-experiment                        # stage 4 — the experiment loop: propose (proposer↔critic) → build EVERY proposal → gate → decide
-```
-
-Helpers, any time:
-
-```
-/kaggle-submit     # budget-gated submit + async poll for the public score
-/kaggle-status     # plain-language readout of where everything stands (read-only)
-/kaggle-study      # learn a top solution: a 3D page + a stage-by-stage chat walk + an agreed lessons log
-```
-
-### Autonomy dial — flip it by voice
-
-Stored in `comps/<slug>/config.md`; change it any time by just saying so.
-
-| mode | pauses at | use when |
+| model | tasks solved per run | notes |
 |---|---|---|
-| `interactive` (default) | **every** gate | new comp, learning the data |
-| `auto_except_submit` | only `understand` + `submit` | the experiment grind |
-| `full_auto` | nothing | walk away |
+| Gemma 4 31B | 60.5 of 123 (49%) | the lean agent, average of 2 runs |
+| Gemma 4 12B | 31 (25%) | |
+| Gemma 4 E4B | 18 (15%) | |
+| Gemma 4 E2B | 7.3 (6%) | |
+| Qwen3.8 27B (reference, not allowed) | 60 (49%) | |
 
-Say **"go auto"** / **"ask me before submitting"** / **"pause"** and Claude
-updates `config.md`. `understand` and `submit` stay human except in `full_auto`:
-a misread metric poisons everything downstream, and a real submission is the only
-irreversible, rate-limited, public action.
+- **Code-graph tools help.** E2B, 123 tasks x 8 samples: 72 passes with the graph tools, 54 without
+  (P(no-graph better) = 0.007). [docs/outside_data.md](docs/outside_data.md)
+- **The official code graphs can be rebuilt.** `graph/code_graph.py` reproduces all 127 official graphs exactly:
+  367,985 nodes, every text, 226,247 edges. [docs/code_graph_builder.md](docs/code_graph_builder.md)
+- **The shipped sandbox under-counts.** In the competition image as shipped the real fix passes 43 of 129 public
+  tasks; in our repaired image, 125. [kits/swe-agent/README.md](kits/swe-agent/README.md)
 
----
+All write-ups: [docs/README.md](docs/README.md). Next step: curate SWE training data, then RL.
 
-## 3. Repo layout
-
-```
-grandmaster/
-  CLAUDE.md                       # the full operating playbook (read this for the rules)
-  README.md                       # this file
-  pyproject.toml  uv.lock         # tools/ deps only (modelling libs added per-comp)
-  tools/                          # the thin reusable uv-run scripts (the only real code)
-    make_folds.py                 #   leak-correct CV scheme → folds.json (group/temporal safety baked into the split)
-    kaggle_io.py                  #   download / submit / submissions / budget / classify-error
-    validate_submission.py        #   shape/columns check vs sample_submission
-                                  #   (leakage has no tool — kaggle-developer self-checks each node, see §4)
-  .claude/
-    skills/                       # the per-stage procedures (one folder per slash command)
-      kaggle-start  kaggle-eda  kaggle-validate  kaggle-baseline
-      kaggle-experiment  kaggle-submit  kaggle-status  kaggle-io  kaggle-leakage
-      kaggle-study
-    agents/                       # parallel workers (fresh context, can't pause)
-      kaggle-proposer.md          #   proposes the next experiments; writes node records once confirmed
-      kaggle-proposal-reviewer.md #   critiques the proposals before any code is written
-      kaggle-developer.md         #   builds AND self-gates one node in isolation (fast leak self-checks, voids on leak)
-      kaggle-eda-explorer.md      #   fans out EDA probes
-                                  # (the proposer↔critic refinement loop runs through disk
-                                  #  contracts in comps/<slug>/rounds/ — no workflow script)
-  comps/                          # one folder per competition (data gitignored)
-    <slug>/ …                     # see below
-```
-
-### Per-competition layout — `comps/<slug>/`
-
-Everything is markdown except the data and the frozen fold indices.
+## Where everything is
 
 ```
-comps/<slug>/
-  progress.md      # MACRO resume: setup checklist + stage checkboxes + derived date/budget/deadline header
-  spec.md          # the contract — prose + a fenced machine block of key fields (metric, target, id, deadline)
-  config.md        # autonomy mode
-  eda.md           # findings + cleaning rationale (prose, no checkboxes)
-  validation.md    # the frozen CV scheme + why it matches the official metric
-  folds.json       # frozen fold indices (split-seed only)
-  graph.md         # THE MAP: a Mermaid DAG of all nodes + a description table linking to each node.md
-  data.md          # DATA LINEAGE: engineered feature-sets (raw→base→fs_*) + which nodes consume each
-  journal.md       # append-only, one timestamped line per node
-  rounds/          # the propose↔critic disk loop: round_NNNN/iter_N/{proposals.md, review.md, VERDICT}
-  submissions.md   # append-only, UTC-timestamped ledger — the source of truth for budget
-  champion/        # the best valid node's src/ + submission.csv + README (byte-copied, never symlinked)
-  nodes/node_NNNN/ # node.md (THE node record: plan + metrics + gate booleans), src/, train.log,
-                   #   submission.csv (leakage gate booleans live in node.md, written by the developer's self-check)
-  data/            # downloaded + unzipped (gitignored)
+agents/          every agent we ran, as submitted: agent.yaml + prompts + configs (agents/README.md)
+tasks/           manifest.csv: one row per task (split, named lists, where its setup files live)
+results/         task_runs.jsonl: one row per task-run with pinned settings; small summaries
+kits/swe-agent/  the run machinery: Makefile, sandbox image, model server, runner, gold check, benchmarks
+graph/           code-graph builder + exact-match check against the official graphs
+analysis/        A/B tests, pass histograms, trace and failure stats, Kaggle-time estimates
+training/        SFT data collection from solved runs
+docs/            write-ups; docs/autopilot/ explains the autopilot
+journal.md       the research log: one line per event, append-only
+CLAUDE.md        the autopilot's operating rules (.claude/ and .codex/ hold its skills and worker agents)
+tools/           the autopilot's scripts: journal search, Kaggle API wrapper, run watchdog, stop hook
 ```
 
----
+Not in git (made locally by `make setup`): `data/` (competition data and model weights), `envs/` (Python
+environments), `runs/` (full run outputs: traces, patches, test logs).
 
-## 4. Safety rails (in one paragraph)
+## Quick start
 
-The CV is **frozen once** at `/kaggle-validate` (`uv run tools/make_folds.py`
-picks the leak-correct scheme — time/group/stratified/plain — with an inviolable
-holdout) and never refit across folds; every transform is fit **inside the train
-fold only**. Leakage is gated by the `kaggle-developer` subagent's own fast
-self-checks on each node it builds (target/id not among the features, a quick
-single-feature-vs-target correlation sweep, reading its own fold loop to confirm
-fit-inside-fold, then OOF coverage / no-NaN / distribution / cv-too-good sanity —
-seconds, never a training run; group & temporal safety come upstream from the frozen
-folds) — a **gate, not a warning**: a node that leaks is **void**, no matter how good
-its CV. Claude **trusts a well-built CV over the
-public LB** — the LB is a small noisy slice, so a CV↔LB gap is surfaced as a
-diagnostic, never auto-acted. The submission **budget and deadline are derived
-from UTC timestamps** in `submissions.md` at read time (against the per-comp daily
-limit recorded in spec.md, resets 00:00 UTC) so they can't drift across a resume;
-dates always come from `date -u`, never memory. The whole run is **resumable**: macro state in `progress.md` checkboxes,
-micro per-node state in the converged `node.md` record's **`stage`** field
-(`proposed → built → scored → reviewed → decided → submitted`, advanced only after
-its artifact exists — artifact-then-mark) — on restart, resume at the first
-unchecked stage, rebuild the search frontier from the `graph.md` map, and continue
-the in-progress node from its `stage`.
+Needs Linux, an NVIDIA GPU, Docker, `uv`, `make`, and a Kaggle account that has accepted the competition rules
+(`KAGGLE_USERNAME` / `KAGGLE_KEY` set).
 
-### Running unattended
-
-By default Claude asks before each command. For a hands-off run, create a
-**local, git-ignored** `.claude/settings.local.json` in your clone — it is specific
-to this one repo and is never committed:
-
-```jsonc
-{ "permissions": { "defaultMode": "bypassPermissions" } }
+```bash
+make setup                                   # data, E2B weights, Python env, sandbox image
+make serve SIZE=e2b                          # model server in the background
+make run AGENT=agents/e2b_t07 TASKS=smoke6   # 6 tasks; results in runs/ and results/task_runs.jsonl
+make down
 ```
 
-That skips prompts the safe way: scoped to this repo only, not your whole machine.
-The repo itself ships **no** permission config — you opt in locally.
+Details and options: [kits/swe-agent/README.md](kits/swe-agent/README.md).
 
----
+## How the work is driven
 
-**For the full rules — the Decision Card format, graph operators
-(draft/improve/debug/combine), the complete leakage suite, the marker-file pattern
-for long trainings, and the subagent/workflow split — read [`CLAUDE.md`](CLAUDE.md).**
+The work runs inside [Claude Code](https://claude.com/claude-code) with an autopilot set up from the "grandmaster"
+template: `CLAUDE.md` holds the rules, `.claude/skills/` the stage procedures (`start`, `eda`, `validate`, `baseline`,
+`experiment`, `progress`, ...), and `.claude/agents/` the worker roles. Every decision and measurement is a line in
+`journal.md`. See [docs/autopilot/README.md](docs/autopilot/README.md).
+
+## License
+
+Apache License 2.0, see [LICENSE](LICENSE). The competition data, the model weights and the competition's own
+harness (`swegemma`, `adk-submission`) are not part of this repo and keep their own terms.

@@ -1,0 +1,39 @@
+[{"stream_name":"stderr","time":7.194340399,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":7.194370247,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":7.194373663,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":7.194375758,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stderr","time":7.780288608,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":7.780308752,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":7.780311703,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":7.7803138149999995,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stdout","time":63.189905483,"data":"Installed wheels in 54 s\n"}
+,{"stream_name":"stdout","time":63.587472198,"data":"model : /kaggle/input/models/google/gemma-4/other/gemma-4-e4b-it-qat-w4a16-ct/2\n"}
+,{"stream_name":"stdout","time":63.587491846,"data":"agent : ['agent.yaml', 'configs/sampling.yaml', 'eval_config.yaml', 'prompts/analyzer.md', 'prompts/system.md', 'sub_agents/code_analyzer.yaml']\n"}
+,{"stream_name":"stdout","time":101.568627139,"data":"adapters in the agent: none\n"}
+,{"stream_name":"stdout","time":428.776397108,"data":"[no_lora] server ready in 326 s\n"}
+,{"stream_name":"stdout","time":531.633755138,"data":"[no_lora / base model] sweep done at 8.7 min\n"}
+,{"stream_name":"stdout","time":552.321295961,"data":"Part B skipped: sweep-only run\n"}
+,{"stream_name":"stdout","time":552.337118041,"data":"Part C skipped: sweep-only run\n"}
+,{"stream_name":"stdout","time":552.421756405,"data":"{\n"}
+,{"stream_name":"stdout","time":552.421771317,"data":"  \"model\": \"gemma-4-e4b-it-qat-w4a16-ct\",\n"}
+,{"stream_name":"stdout","time":552.421774618,"data":"  \"gpus\": \"NVIDIA L4\",\n"}
+,{"stream_name":"stdout","time":552.421777443,"data":"  \"gpu_count\": 4,\n"}
+,{"stream_name":"stdout","time":552.421779928,"data":"  \"server_start_s\": {\n"}
+,{"stream_name":"stdout","time":552.421782389,"data":"    \"no_lora\": 326.4\n"}
+,{"stream_name":"stdout","time":552.421784924,"data":"  },\n"}
+,{"stream_name":"stdout","time":552.421787144,"data":"  \"errors\": [],\n"}
+,{"stream_name":"stdout","time":552.421789392,"data":"  \"minutes_used\": 9.1\n"}
+,{"stream_name":"stdout","time":552.421791693,"data":"}\n"}
+,{"stream_name":"stdout","time":552.42179392,"data":"\n"}
+,{"stream_name":"stdout","time":552.421796284,"data":"Tokens per second after the first token:\n"}
+,{"stream_name":"stdout","time":552.431390514,"data":"\n"}
+,{"stream_name":"stdout","time":552.431400798,"data":"Seconds to the first token:\n"}
+,{"stream_name":"stderr","time":557.813840612,"data":"/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":557.813861556,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":557.964178211,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":557.964194081,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":558.660189056,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to notebook\n"}
+,{"stream_name":"stderr","time":558.985211731,"data":"[NbConvertApp] Writing 31911 bytes to __notebook__.ipynb\n"}
+,{"stream_name":"stderr","time":561.611607648,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to html\n"}
+,{"stream_name":"stderr","time":562.468756857,"data":"[NbConvertApp] Writing 337575 bytes to __results__.html\n"}
+]

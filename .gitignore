@@ -1,61 +1,63 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# DENY BY DEFAULT.  Ignore everything at the repo root, then re-include ONLY the
-# reusable system (the parts that should travel with a clone). Anything not on
-# the allowlist below — new scratch dirs, training logs, caches, secrets — is
-# ignored automatically and can never be accidentally committed or pushed.
-#
-# To commit something new at the root, you must add an explicit `!` exception.
+# DENY BY DEFAULT. Ignore everything at the repo root, then re-include only what
+# ships. Anything not on the allowlist (data, run outputs, envs, caches, secrets)
+# is ignored automatically and can never be committed by accident.
+# To ship something new at the root, add an explicit `!` exception.
 # ─────────────────────────────────────────────────────────────────────────────
 
 # 1) ignore everything at the root
 /*
 
-# 2) re-include the dirs we ship (git then recurses into them; junk inside is
-#    re-excluded in section 4)
+# 2) the folders that ship
 !/.claude/
 !/.codex/
-!/comps/
+!/agents/
+!/analysis/
 !/docs/
+!/graph/
+!/kits/
+!/results/
+!/tasks/
 !/tools/
+!/training/
 
-# 3) re-include the root files we ship
+# 3) the root files that ship
+!/.env.example
 !/.gitignore
 !/AGENTS.md
 !/CLAUDE.md
+!/LICENSE
+!/Makefile
 !/README.md
+!/control.md
+!/journal.md
 !/pyproject.toml
 !/uv.lock
 
-# 4) within the re-included dirs, exclude local/machine-specific junk
-#    per-competition work is entirely local — keep only the placeholder
-comps/*
-!comps/.gitkeep
-#    personal/local Claude Code settings (machine-specific; the shared
-#    project settings.json — hooks like the codex-agents regen — IS committed)
+# 4) local-only things inside shipped folders
+#    (data/, runs/, envs/, refs/ are not re-included above, so they stay local)
 .claude/settings.local.json
 .claude/projects/
-#    personal/local Codex settings (machine-specific)
+.claude/worktrees/
 .codex/config.toml
-#    local Codex bridge to Claude project memory
 .codex/projects
-#    local cross-competition memory (case bank) — stays local, never committed
-MEMORY.md
-#    python caches / build artifacts anywhere
+kits/swe-agent/sandbox/setup.py
+kits/swe-agent/sandbox/wheels_extra/
 __pycache__/
 *.pyc
 *.egg-info/
 .ipynb_checkpoints/
-#    model/data blobs that might land inside a shipped dir
 *.parquet
 *.ckpt
 *.pt
 
-# 5) defense-in-depth: secrets stay ignored even if section 1 is ever loosened
+# 5) secrets stay ignored even if section 1 is ever loosened
 .env
 .env.*
 *.env
 kaggle.json
 .kaggle/
+MEMORY.md
 
 # 6) ...but the credential TEMPLATE ships (no secrets in it). Last so it beats `.env.*`.
 !.env.example

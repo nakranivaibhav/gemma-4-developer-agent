@@ -1,0 +1,58 @@
+[{"stream_name":"stderr","time":11.286503406,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":11.286541858,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":11.286545325,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":11.28654744,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stderr","time":12.031465422,"data":"0.00s - Debugger warning: It seems that frozen modules are being used, which may\n"}
+,{"stream_name":"stderr","time":12.031489109,"data":"0.00s - make the debugger miss breakpoints. Please pass -Xfrozen_modules=off\n"}
+,{"stream_name":"stderr","time":12.031492052,"data":"0.00s - to python to disable frozen modules.\n"}
+,{"stream_name":"stderr","time":12.031494157,"data":"0.00s - Note: Debugging will proceed. Set PYDEVD_DISABLE_FILE_VALIDATION=1 to disable this validation.\n"}
+,{"stream_name":"stdout","time":86.689814557,"data":"Installed wheels in 73 s\n"}
+,{"stream_name":"stdout","time":87.435883603,"data":"model : /kaggle/input/models/google/gemma-4/other/gemma-4-12b-it-qat-w4a16-ct/2\n"}
+,{"stream_name":"stdout","time":87.435906027,"data":"agent : ['agent.yaml', 'configs/sampling.yaml', 'eval_config.yaml', 'prompts/analyzer.md', 'prompts/system.md', 'sub_agents/code_analyzer.yaml']\n"}
+,{"stream_name":"stdout","time":134.988489173,"data":"adapters in the agent: none\n"}
+,{"stream_name":"stdout","time":479.227781888,"data":"[no_lora] server ready in 343 s\n"}
+,{"stream_name":"stdout","time":632.931403438,"data":"[no_lora / base model] sweep done at 10.3 min\n"}
+,{"stream_name":"stdout","time":769.867370529,"data":"[readme_lora] server ready in 116 s\n"}
+,{"stream_name":"stdout","time":769.867416081,"data":"served: /kaggle/input/models/google/gemma-4/other/gemma-4-12b-it-qat-w4a16-ct/2 []\n"}
+,{"stream_name":"stdout","time":923.225733826,"data":"[readme_lora / base model] sweep done at 15.2 min\n"}
+,{"stream_name":"stderr","time":923.455526501,"data":"/usr/local/lib/python3.12/dist-packages/google/adk/features/_feature_decorator.py:72: UserWarning: [EXPERIMENTAL] feature FeatureName.AGENT_CONFIG is enabled.\n"}
+,{"stream_name":"stderr","time":923.455549206,"data":"  check_feature_enabled()\n"}
+,{"stream_name":"stderr","time":923.455553195,"data":"/tmp/ipykernel_65/2682106108.py:27: UserWarning: [EXPERIMENTAL] EventsCompactionConfig: This feature is experimental and may change or be removed in future versions without notice. It may introduce breaking changes at any time.\n"}
+,{"stream_name":"stderr","time":923.455557441,"data":"  events_compaction_config=EventsCompactionConfig(compaction_interval=15, overlap_size=2,\n"}
+,{"stream_name":"stderr","time":923.455560335,"data":"\n"}
+,{"stream_name":"stderr","time":923.455562672,"data":"/usr/local/lib/python3.12/dist-packages/google/adk/features/_feature_decorator.py:72: UserWarning: [EXPERIMENTAL] feature FeatureName.AGENT_CONFIG is enabled.\n"}
+,{"stream_name":"stderr","time":923.455565323,"data":"  check_feature_enabled()\n"}
+,{"stream_name":"stderr","time":923.455567567,"data":"/tmp/ipykernel_65/2682106108.py:27: UserWarning: [EXPERIMENTAL] EventsCompactionConfig: This feature is experimental and may change or be removed in future versions without notice. It may introduce breaking changes at any time.\n"}
+,{"stream_name":"stderr","time":923.455570172,"data":"  events_compaction_config=EventsCompactionConfig(compaction_interval=15, overlap_size=2,\n"}
+,{"stream_name":"stderr","time":923.522360038,"data":"WARNING:swegemma.sandbox.subprocess:ensurepip unavailable in sandbox 2340c5a9-ba6, creating venv without pip: Command '['/tmp/swegemma_sandbox_2340c5a9-ba6_pshfiqi3/venv/bin/python3', '-m', 'ensurepip', '--upgrade', '--default-pip']' returned non-zero exit status 1.\n"}
+,{"stream_name":"stderr","time":923.522388269,"data":"\n"}
+,{"stream_name":"stderr","time":923.522391456,"data":"WARNING:swegemma.sandbox.subprocess:ensurepip unavailable in sandbox 2340c5a9-ba6, creating venv without pip: Command '['/tmp/swegemma_sandbox_2340c5a9-ba6_pshfiqi3/venv/bin/python3', '-m', 'ensurepip', '--upgrade', '--default-pip']' returned non-zero exit status 1.\n"}
+,{"stream_name":"stderr","time":2758.35472684,"data":"WARNING:swegemma.sandbox.subprocess:ensurepip unavailable in sandbox c0e271ef-82a, creating venv without pip: Command '['/tmp/swegemma_sandbox_c0e271ef-82a_n7hypzyb/venv/bin/python3', '-m', 'ensurepip', '--upgrade', '--default-pip']' returned non-zero exit status 1.\n"}
+,{"stream_name":"stderr","time":2758.354766795,"data":"\n"}
+,{"stream_name":"stderr","time":2758.354772544,"data":"WARNING:swegemma.sandbox.subprocess:ensurepip unavailable in sandbox c0e271ef-82a, creating venv without pip: Command '['/tmp/swegemma_sandbox_c0e271ef-82a_n7hypzyb/venv/bin/python3', '-m', 'ensurepip', '--upgrade', '--default-pip']' returned non-zero exit status 1.\n"}
+,{"stream_name":"stdout","time":2760.944976835,"data":"[1/8] httpx_3672: resolved=False wall=1837s calls=103 at 45.8 min\n"}
+,{"stream_name":"stdout","time":2760.945000892,"data":"time box reached (46 min used); skipping the remaining 7 tasks\n"}
+,{"stream_name":"stdout","time":2781.525082219,"data":"{\n"}
+,{"stream_name":"stdout","time":2781.525106008,"data":"  \"model\": \"gemma-4-12b-it-qat-w4a16-ct\",\n"}
+,{"stream_name":"stdout","time":2781.525110007,"data":"  \"gpus\": \"NVIDIA L4\",\n"}
+,{"stream_name":"stdout","time":2781.525112579,"data":"  \"gpu_count\": 4,\n"}
+,{"stream_name":"stdout","time":2781.525115013,"data":"  \"server_start_s\": {\n"}
+,{"stream_name":"stdout","time":2781.525117401,"data":"    \"no_lora\": 343.4,\n"}
+,{"stream_name":"stdout","time":2781.525119863,"data":"    \"readme_lora\": 116.1\n"}
+,{"stream_name":"stdout","time":2781.525122176,"data":"  },\n"}
+,{"stream_name":"stdout","time":2781.525124337,"data":"  \"errors\": [],\n"}
+,{"stream_name":"stdout","time":2781.525126611,"data":"  \"minutes_used\": 46.1\n"}
+,{"stream_name":"stdout","time":2781.525129022,"data":"}\n"}
+,{"stream_name":"stdout","time":2781.525131192,"data":"\n"}
+,{"stream_name":"stdout","time":2781.52513337,"data":"Tokens per second after the first token:\n"}
+,{"stream_name":"stdout","time":2781.535723686,"data":"\n"}
+,{"stream_name":"stdout","time":2781.535747865,"data":"Seconds to the first token:\n"}
+,{"stream_name":"stderr","time":2787.808850501,"data":"/usr/local/lib/python3.12/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":2787.808874434,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":2788.001364719,"data":"/usr/local/lib/python3.12/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":2788.001387096,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":2788.865539184,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to notebook\n"}
+,{"stream_name":"stderr","time":2789.245707581,"data":"[NbConvertApp] Writing 223311 bytes to __notebook__.ipynb\n"}
+,{"stream_name":"stderr","time":2791.979144217,"data":"[NbConvertApp] Converting notebook __notebook__.ipynb to html\n"}
+,{"stream_name":"stderr","time":2792.912177006,"data":"[NbConvertApp] Writing 473442 bytes to __results__.html\n"}
+]

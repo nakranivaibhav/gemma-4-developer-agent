@@ -1,0 +1,10 @@
+name: skill_probe_agent
+model: gemma-4-31b-it-qat-w4a16-ct
+adapter: main_lora
+instruction: !include prompts/system.md
+tools:
+  - get_status
+  - submit_patch
+generate_content_config: !include configs/sampling.yaml
+skills:
+  - skills/find-symbol

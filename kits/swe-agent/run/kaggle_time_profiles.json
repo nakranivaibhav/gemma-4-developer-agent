@@ -1,0 +1,167 @@
+{
+  "l4x4_31b_nolora": {
+    "per_call_s": 0.0,
+    "prefill_tok_s": 1296.4,
+    "decode": [
+      [
+        1000,
+        38.33
+      ],
+      [
+        4000,
+        37.66
+      ],
+      [
+        8000,
+        36.2
+      ],
+      [
+        16000,
+        34.51
+      ],
+      [
+        24000,
+        32.9
+      ],
+      [
+        30000,
+        32.39
+      ]
+    ],
+    "tool_s_per_call": 1.9,
+    "setup_min": 0.5,
+    "source": "results/kaggle_speed/31b/speed_sweep.csv setting=no_lora requests_to=base model | tool_s_per_call 1.9 = (actual agent s - modelled model s) / tool calls over 7 Kaggle e2e tasks (31B, subprocess sandbox), range 0.7-2.6"
+  },
+  "l4x4_31b_adapter": {
+    "per_call_s": 0.0,
+    "prefill_tok_s": 1259.7,
+    "decode": [
+      [
+        1000,
+        33.62
+      ],
+      [
+        4000,
+        33.03
+      ],
+      [
+        8000,
+        31.87
+      ],
+      [
+        16000,
+        30.72
+      ],
+      [
+        24000,
+        29.48
+      ],
+      [
+        30000,
+        29.0
+      ]
+    ],
+    "tool_s_per_call": 1.9,
+    "setup_min": 0.5,
+    "source": "results/kaggle_speed/31b/speed_sweep.csv setting=readme_lora requests_to=adapter main_lora | tool_s_per_call 1.9 = (actual agent s - modelled model s) / tool calls over 7 Kaggle e2e tasks (31B, subprocess sandbox), range 0.7-2.6"
+  },
+  "l4x4_12b_nolora": {
+    "per_call_s": 0.012,
+    "prefill_tok_s": 2708.0,
+    "decode": [
+      [
+        1000,
+        79.59
+      ],
+      [
+        4000,
+        75.91
+      ],
+      [
+        8000,
+        70.95
+      ],
+      [
+        16000,
+        65.94
+      ],
+      [
+        24000,
+        61.66
+      ],
+      [
+        30000,
+        59.94
+      ]
+    ],
+    "tool_s_per_call": 1.9,
+    "setup_min": 0.5,
+    "source": "results/kaggle_speed/12b/speed_sweep.csv setting=no_lora requests_to=base model | tool_s_per_call 1.9 = (actual agent s - modelled model s) / tool calls over 7 Kaggle e2e tasks (31B, subprocess sandbox), range 0.7-2.6"
+  },
+  "l4x4_e4b_nolora": {
+    "per_call_s": 0.015,
+    "prefill_tok_s": 4819.7,
+    "decode": [
+      [
+        1000,
+        113.15
+      ],
+      [
+        4000,
+        104.45
+      ],
+      [
+        8000,
+        98.21
+      ],
+      [
+        16000,
+        91.13
+      ],
+      [
+        24000,
+        87.75
+      ],
+      [
+        30000,
+        85.48
+      ]
+    ],
+    "tool_s_per_call": 1.9,
+    "setup_min": 0.5,
+    "source": "results/kaggle_speed/e4b/speed_sweep.csv setting=no_lora requests_to=base model"
+  },
+  "l4x4_e2b_nolora": {
+    "per_call_s": 0.012,
+    "prefill_tok_s": 8206.0,
+    "decode": [
+      [
+        1000,
+        171.12
+      ],
+      [
+        4000,
+        155.61
+      ],
+      [
+        8000,
+        143.94
+      ],
+      [
+        16000,
+        130.55
+      ],
+      [
+        24000,
+        123.8
+      ],
+      [
+        30000,
+        119.37
+      ]
+    ],
+    "tool_s_per_call": 1.9,
+    "setup_min": 0.5,
+    "source": "results/kaggle_speed/e2b/speed_sweep.csv setting=no_lora requests_to=base model"
+  }
+}
