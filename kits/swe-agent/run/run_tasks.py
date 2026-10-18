@@ -84,8 +84,9 @@ def served_model():
     if os.environ.get("MODEL_DIR"):
         return Path(os.environ["MODEL_DIR"]).resolve()
     note = Path(os.environ.get("SERVER_JSON") or ROOT / "runs" / "logs" / "current_server.json")
-    if note.exists():
-        return (ROOT / json.loads(note.read_text())["model_dir"]).resolve()  # stored relative to the repo root
+    loaded = json.loads(note.read_text()).get("model_dir") if note.exists() else None  # remote notes have none
+    if loaded:
+        return (ROOT / loaded).resolve()  # stored relative to the repo root
     return (data / "external" / "model").resolve()
 
 

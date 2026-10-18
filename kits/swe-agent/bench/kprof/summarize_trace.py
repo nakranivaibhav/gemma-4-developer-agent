@@ -1,4 +1,4 @@
-"""Turn a torch-profiler chrome trace from profile_decode.py into a per-kernel-family table.
+"""Turn a torch-profiler chrome trace from run_all.sh (profile_server.py) into a per-kernel-family table.
 
 usage: python -I kits/swe-agent/bench/kprof/summarize_trace.py <out_dir> [...]
 Reads <out_dir>/trace/*.json(.gz) and <out_dir>/timing.json; prints kernel families by share of GPU time,

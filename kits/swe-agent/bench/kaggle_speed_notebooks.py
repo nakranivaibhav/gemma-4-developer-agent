@@ -1,6 +1,6 @@
 """Build the Kaggle 4xL4 speed-test notebooks (31B, 12B, E4B, E2B) from one template.
 
-Usage: python build_notebooks.py <out_dir> <tasks_json> [variant,variant]
+usage: python kits/swe-agent/bench/kaggle_speed_notebooks.py <out_dir> <tasks_json> [variant,variant]
 Writes <out_dir>/<variant>/{speed_test.ipynb,kernel-metadata.json,timeout_s}.
 A variant's `parts` picks the notebook sections: 'ABC' = sweep LoRA off, sweep LoRA on, real tasks;
 'A' = the LoRA-off sweep only (the E4B/E2B runs: no adapters exist for them, and the weekly GPU quota was short).

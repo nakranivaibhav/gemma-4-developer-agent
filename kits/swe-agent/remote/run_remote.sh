@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run a task list against a REMOTE model server reached through an SSH tunnel; sandboxes stay on this machine.
-# usage: run_remote.sh <run_id> <tasks_at_once> <task_list_file> <server_json> [agent_dir] [local_port]
+# usage: run_remote.sh <run_id> <tasks_at_once> <tasks (manifest selector or ids)> <server_json> [agent_dir] [local_port]
 # Saves the server's /metrics before and after next to the results. The ledger pin comes from <server_json>.
 set -u
 cd "$(dirname "$0")/../../.."
