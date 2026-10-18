@@ -1,6 +1,6 @@
 """Summarise parallel real-task runs: throughput, cache reuse, faults and per-task outcomes.
 
-usage: python -I analysis/real_summary.py <results_dir> [...]
+usage: python -I kits/swe-agent/bench/real_summary.py <results_dir> [...]
 Each results_dir holds probe_results.jsonl, metrics_before.txt, metrics_after.txt and traces/ (written by kits/swe-agent/bench/real_matrix.sh).
 Wall time is taken from the metrics files' modification times.
 """

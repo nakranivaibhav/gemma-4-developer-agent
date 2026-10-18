@@ -1,6 +1,6 @@
 """One line per trace step: who spoke, which tool, how big the prompt was.
 
-usage: python -I trace_summary.py <trace.json> [--width N]
+usage: python -I analysis/trace_summary.py <trace.json> [--width N]
 Everything printed is truncated; the trace is harness output and may be large.
 """
 import json

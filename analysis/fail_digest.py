@@ -1,7 +1,8 @@
-"""fail_digest.py <comp_dir> <run_id> [full] — per-task signals for one run, from the ledger, traces, patches, test outputs."""
+"""usage: python -I analysis/fail_digest.py <run_id> [full] — per-task signals for one run, from the ledger, traces, patches, test outputs."""
 import json, re, sys, collections, statistics
 from pathlib import Path
-C, RUN = Path(sys.argv[1]), sys.argv[2]
+C = Path(__file__).resolve().parents[1]  # the repo root
+RUN = sys.argv[1]
 tasks = {}
 for l in open(C / "data/tasks.jsonl"):
     t = json.loads(l); tasks[t["instance_id"]] = t
@@ -46,7 +47,7 @@ def agg(name, rows):
           f"touched every gold source file {sum(1 for x in rows if x['nsrc'] and x['hit'] == x['nsrc'])} | touched none {sum(1 for x in rows if x['nsrc'] and x['hit'] == 0)} | "
           f"model added lines med {med('model_add')} vs gold {med('gold_add')} | malformed med {med('malformed')} | tool errors med {med('tool_err')} | patch has extra files {sum(1 for x in rows if x['extra'])}")
 agg("RESOLVED", [x for x in S if x["res"]]); agg("FAILED  ", [x for x in S if not x["res"]])
-if len(sys.argv) > 3:
+if len(sys.argv) > 2:
     for x in sorted((x for x in S if not x["res"]), key=lambda x: x["id"]):
         print(f"\n## {x['id']} | tests p/f/e {x['tests']} exit {x['exit']} | calls {x['calls']} ended {x['ended']} {x['mins']}min | gold +{x['gold_add']} in {x['gold_files']} files, model +{x['model_add']}")
         print(f"   gold src {x['gold_src'][:6]}{'…' if len(x['gold_src']) > 6 else ''} | model {x['model_files'][:6]} | hit {x['hit']}/{x['nsrc']}")

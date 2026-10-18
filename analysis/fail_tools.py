@@ -1,7 +1,8 @@
-"""fail_tools.py <comp_dir> <run_id> — tool-error kinds, where calls go, and whether names the hidden tests need are in the task text."""
+"""usage: python -I analysis/fail_tools.py <run_id> — tool-error kinds, where calls go, and whether names the hidden tests need are in the task text."""
 import json, re, sys, collections, statistics
 from pathlib import Path
-C, RUN = Path(sys.argv[1]), sys.argv[2]
+C = Path(__file__).resolve().parents[1]  # the repo root
+RUN = sys.argv[1]
 tasks = {}
 for l in open(C / "data/tasks.jsonl"):
     t = json.loads(l); tasks[t["instance_id"]] = t
