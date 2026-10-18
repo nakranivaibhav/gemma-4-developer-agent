@@ -16,7 +16,7 @@ only 8 of those pass on 2 to 7 tries. That is too few for RL on our own tasks al
 - **Tries:** 8 independent tries per task, run ids `hist_e2b_t07_s1` to `hist_e2b_t07_s8`. There is no real seed: ADK
   does not forward one, so each try is a fresh random draw.
 - **Load:** 8 runners × 16 tasks = 128 at once on one vLLM server (RTX 5090), from 07:42 to 08:50 UTC (68 min).
-- **Script:** `bash kits/swe-agent/run/hist_runs.sh agents/e2b_t07 hist_e2b_t07 usable 8 128`, then
+- **Script:** `bash kits/swe-agent/experiments/hist.sh agents/e2b_t07 hist_e2b_t07 usable 8 128`, then
   `envs/harness/bin/python -I analysis/pass_hist.py hist_e2b_t07`.
 
 ## Result

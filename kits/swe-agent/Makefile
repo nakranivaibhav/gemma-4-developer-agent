@@ -80,8 +80,8 @@ serve: ## start vLLM in the background for SIZE (NGRAM=0 for plain decoding); lo
 	  kill -0 $$(cat runs/logs/server.pid) 2>/dev/null || { echo "server died: see runs/logs/server.log"; exit 1; }; \
 	  sleep 10; done; echo "server not up after 20 min: see runs/logs/server.log"; exit 1
 
-run: ## run AGENT on TASKS (manifest selector or ids) -> runs/$$RUN + results/task_runs.jsonl
-	MODEL_DIR=$(MODEL) RUN_ID=$(RUN) EVAL_TIER=$(TIER) EVAL_NOTE="$(NOTE)" CONCURRENCY=$(CONCURRENCY) \
+run: ## run AGENT on TASKS (manifest selector or ids) on the served model -> runs/$$RUN + results/task_runs.jsonl
+	RUN_ID=$(RUN) EVAL_TIER=$(TIER) EVAL_NOTE="$(NOTE)" CONCURRENCY=$(CONCURRENCY) \
 	  $(PY) -I $(KIT)/run/run_tasks.py $(AGENT) runs/$(RUN) $(TASKS)
 
 gold-check: ## real fix and empty patch on every task in the repaired sandbox; writes tasks/manifest.csv

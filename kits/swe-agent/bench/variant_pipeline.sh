@@ -3,7 +3,7 @@
 #   1. wait until the model download has finished (all *.safetensors adding up to the expected size, no .kaggle-partial left)
 #   2. speed matrix (bench_matrix.sh variant): plain vs ngram speculative decoding, 1-16 simulated agents at once
 #   3. pick the setting: the fewest agents within 3% of the best turns/min (no errors), at most MAX_PAR
-#   4. two passes of the lean agent for this size over the tune tasks at that setting (run_round.sh)
+#   4. two passes of the lean agent for this size over the tune tasks at that setting (kits/swe-agent/experiments/round.sh)
 # usage: bash kits/swe-agent/bench/variant_pipeline.sh <tag> <model_dir> <expected_safetensors_bytes> [model_extra] [task_list]
 # env: RUN_PREFIX (default v_<tag>_lean), PICK_FORCE="<plain|ngram> <agents>" skips the speed matrix (setting already measured)
 # Launch it detached through tools/run_with_watchdog.py (CLAUDE.md "Long runs").
@@ -77,7 +77,7 @@ CPU=runs/${PREFIX}_cpu.csv; echo "utc,cpu_busy_pct,load1,containers" > "$CPU"
     t0=$t1; i0=$i1
   done ) &
 CPU_PID=$!
-bash kits/swe-agent/run/run_round.sh "agents/lean_${TAG}" "$PREFIX" "$TASKS"
+bash kits/swe-agent/experiments/round.sh "agents/lean_${TAG}" "$PREFIX" "$TASKS"
 RC=$?
 kill $CPU_PID 2>/dev/null
 SP=$(ps -eo pid,args | grep '[v]llm.entrypoints' | awk '{print $1}')

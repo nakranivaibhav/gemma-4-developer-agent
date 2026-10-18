@@ -1,4 +1,4 @@
-"""Paired A/B of two multi-sample runs (kits/swe-agent/run/hist_runs.sh prefixes) over the same tasks.
+"""Paired A/B of two multi-sample runs (kits/swe-agent/experiments/hist.sh prefixes) over the same tasks.
 
 usage: envs/harness/bin/python -I analysis/ab_compare.py <prefix_A> <prefix_B> [--tasks usable] [--split train]
 Per task: passes out of N in A and in B. Reports total passes per arm, solved-per-try mean, tasks solved at least

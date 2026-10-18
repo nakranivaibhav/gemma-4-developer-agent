@@ -33,7 +33,8 @@ Useful knobs: `SIZE=e2b|e4b|12b|31b`, `NGRAM=0` (plain decoding instead of n-gra
 |---|---|
 | `sandbox/` | the Docker image each task runs in. `Dockerfile` adds 31 test wheels (`wheels_extra.txt`, fetched by `fetch_wheels.py`) on top of the competition image; `repair.py` installs, per repo, what that repo's own tests need. `build_hook.py` joins the organiser's `setup.py` with `repair.py` (the harness copies one file into each container). With it the real fix passes 125 of 129 public tasks, against 43 in the image as shipped. |
 | `serve/` | `serve_model.py` starts vLLM with the starter notebook's settings; `serve_fast.sh` adds the measured-fastest options. |
-| `run/` | `run_tasks.py` (the runner) and its helpers: `manifest.py` (task selectors), `pin.py` (settings pinned per run), `trace_stats.py`, `tag_tasks.py`, `kaggle_time.py` / `kaggle_clock.py` (Kaggle-time model and optional per-task cut), `fleet.py` (several GPUs on one queue), `log_proxy.py` (captures every request for training data). Shell drivers: `run_round.sh` (two passes), `hist_runs.sh` (N samples side by side), `holdout_step.sh`, `resume_pass.sh`. |
+| `run/` | `run_tasks.py` (the runner) and its helpers: `manifest.py` (task selectors), `pin.py` (settings pinned per run), `trace_stats.py`, `tag_tasks.py`, `kaggle_time.py` / `kaggle_clock.py` (Kaggle-time model and optional per-task cut), `fleet.py` (several GPUs on one queue), `ledger_rebuild.py` (rewrites a run's ledger rows after a parsing fix). Re-running with the same `RUN` resumes: finished tasks are skipped. |
+| `experiments/` | several passes in one go, each a call of the runner: `round.sh` (two passes of one agent, the prompt-loop round), `hist.sh` (N samples side by side on one server), `holdout.sh` (candidate, baseline, candidate on the holdout tasks), `fleet.sh` (one GPU's workers in a multi-GPU fleet run). `log_proxy.py` sits between runner and server and keeps every request and response (training data). |
 | `check/` | `gold_verify.py` / `gold_run.sh` run the harness's own verifier with the real fix or an empty patch; `env_census.py` and `tool_samples.py` are earlier environment probes. |
 | `bench/` | server speed tests (`bench_multi.py`, `bench_matrix.sh`, `real_matrix.sh`), model-size pipelines (`variant_pipeline.sh`), decode profiling (`kprof/`), and the Kaggle speed-test notebook builder. |
 | `remote/` | the same on a rented GPU pod: `pod_setup.sh`, `pod_serve.sh` (set `LOCAL_REPO`), `run_remote.sh` through an SSH tunnel. |
@@ -43,6 +44,6 @@ Useful knobs: `SIZE=e2b|e4b|12b|31b`, `NGRAM=0` (plain decoding instead of n-gra
 
 - The model runs on the host, not in Docker: GPU access from containers needs the NVIDIA container toolkit, which
   this setup does not assume. Only the task sandboxes are containers.
-- Long runs (`run_round.sh`, `hist_runs.sh`) are meant to be started detached under `tools/run_with_watchdog.py`.
+- Long runs (everything in `experiments/`) are meant to be started detached under `tools/run_with_watchdog.py`.
 - The harness is the competition's `swegemma` 0.2.10. Two places in `run_tasks.py` wrap its internals (sandbox CPU
   shares / fleet labels, and the optional Kaggle clock); both are commented where they happen.

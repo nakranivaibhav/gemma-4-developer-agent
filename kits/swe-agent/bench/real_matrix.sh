@@ -24,7 +24,9 @@ run_cfg() {  # name, gpu_util, extra vLLM flags, concurrency levels
     for n in $levels; do
       kill -0 $pid 2>/dev/null || { echo "$name SERVER_DIED before c$n"; break; }
       echo "--- $name concurrency=$n $(date -u +%H:%MZ)"
-      bash kits/swe-agent/run/run_parallel.sh $n real_${name}_c$n "${TASKS[@]}"
+      OUT=runs/real_${name}_c$n; mkdir -p $OUT; curl -s localhost:8000/metrics > $OUT/metrics_before.txt
+      CONCURRENCY=$n envs/harness/bin/python -I kits/swe-agent/run/run_tasks.py agents/sample $OUT "${TASKS[@]}"
+      curl -s localhost:8000/metrics > $OUT/metrics_after.txt
       touch /tmp/gemma-4-developer-agent_real_${name}_c$n.done
     done
   else

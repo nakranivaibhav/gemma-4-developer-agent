@@ -21,7 +21,8 @@ usage: python kits/swe-agent/run/manifest.py ids <selector>    task ids, one per
        python kits/swe-agent/run/manifest.py summary           counts per source / split / list
 
 A selector is one of: a split (tune, holdout, excluded), `train` (= tune; training reads only this), `usable`
-(= not excluded), `all`, a list name (smoke6, ...), a path to a file of ids, or several of these joined by `+`.
+(= not excluded), `all`, a list name (smoke6, ...), a task id, a path to a file of ids, or several of these
+joined by `+` or spaces.
 """
 import csv
 import sys
@@ -51,12 +52,16 @@ def write(all_rows):
 def ids(selector):
     """Task ids for a selector, in manifest order (file selectors keep the file's order)."""
     out = []
-    for part in str(selector).split("+"):
+    rs = rows()
+    known = {r["id"] for r in rs}
+    for part in str(selector).replace("+", " ").split():
         path = Path(part)
+        if part in known:  # a single task id
+            out.append(part)
+            continue
         if path.suffix and path.is_file():  # a plain file of ids
             out += path.read_text().split()
             continue
-        rs = rows()
         if part == "all":
             sel = rs
         elif part == "usable":
@@ -109,7 +114,7 @@ def summary():
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "summary"
     if cmd == "ids":
-        print("\n".join(ids(sys.argv[2])))
+        print("\n".join(ids(" ".join(sys.argv[2:]))))
     elif cmd == "check":
         sys.exit(1 if check() else 0)
     else:

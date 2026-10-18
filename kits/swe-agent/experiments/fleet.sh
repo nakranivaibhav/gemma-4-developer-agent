@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Start one GPU's workers for a fleet run (kits/swe-agent/run/fleet.py): one task-runner process per pass (run id), all pulling
 # whole tasks from the shared queue. Output of all four goes to stdout, each line prefixed with its run id.
-# usage: bash kits/swe-agent/run/fleet_launch.sh <fleet_dir> <gpu> <server_json> <port> [port2 port3 port4]
+# usage: bash kits/swe-agent/experiments/fleet.sh <fleet_dir> <gpu> <server_json> <port> [port2 port3 port4]
 #   one port: every pass talks to the same server; four ports: pass i talks to server i (one model copy per GPU)
 # Ends when every worker has ended: the GPU's target went to 0 (drain), or the whole queue is done.
 set -u

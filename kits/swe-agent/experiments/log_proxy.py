@@ -1,6 +1,6 @@
 """Pass-through proxy that records the settings of every request the harness sends to the model server.
 
-usage: python -I log_proxy.py <out.jsonl> [listen_port=8001] [upstream_port=8000]
+usage: python -I kits/swe-agent/experiments/log_proxy.py <out.jsonl> [listen_port=8001] [upstream_port=8000]
 Only request settings and response sizes are written to out.jsonl, never message text.
 env LOG_PROXY_FULL=<file.jsonl.gz>: also keep every chat request and response in full (messages, tools, settings,
 the returned message and usage), one gzip member per call, for training data. Read with gzip.open(...).

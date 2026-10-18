@@ -1,7 +1,7 @@
 """Per-task pass counts over N samples of one agent, and the histogram of those counts.
 
 usage: envs/harness/bin/python -I analysis/pass_hist.py <run_prefix> [--tasks usable]
-Reads ledger rows with run_id <run_prefix>_s1 .. _sN (kits/swe-agent/run/hist_runs.sh). A sample that has no row for a task
+Reads ledger rows with run_id <run_prefix>_s1 .. _sN (kits/swe-agent/experiments/hist.sh). A sample that has no row for a task
 (run cut short) leaves that task with fewer tries; the table shows tries so this is visible.
 Bands: never (0 passes), mixed (some but not all), always (every try). Mixed tasks are the ones RL can learn from:
 a group of rollouts on them has both rewards.

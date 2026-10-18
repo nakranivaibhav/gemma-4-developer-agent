@@ -40,7 +40,7 @@ own tool schemas (`runs/sft/tools_schema.json`, compiled offline from the lean a
 - So a compacted run's full transcript is not what the model saw. 157 rows exceed 32,768 tokens.
 - **223 of the 375 within-cap 31B rows are exact as stored.** Use those first.
 
-**Exact data from now on:** `kits/swe-agent/run/run_round.sh` now sends every run through `kits/swe-agent/run/log_proxy.py` with full
+**Exact data from now on:** `kits/swe-agent/experiments/round.sh` now sends every run through `kits/swe-agent/experiments/log_proxy.py` with full
 capture (`CAPTURE=1` by default). Every chat request and response is kept in `runs/<run>/requests.jsonl.gz`.
 These are exact prompt/completion pairs, compaction included, and they cover sub-agent calls too. Capture starts
 with the E4B step of the chain running tonight. The Qwen runs will be the first exact teacher data for distillation.

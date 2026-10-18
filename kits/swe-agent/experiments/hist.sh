@@ -3,7 +3,7 @@
 # against ONE model server so the GPU stays fed (no per-run tail). Each sample is its own run_tasks process with
 # its own run id <prefix>_s<k> and CONCURRENCY = TOTAL / N. ADK does not forward a seed to the server, so the
 # samples are independent random draws at the agent's temperature.
-# usage: bash kits/swe-agent/run/hist_runs.sh <agent_dir> <prefix> <task_list> [N=8] [TOTAL=128]
+# usage: bash kits/swe-agent/experiments/hist.sh <agent_dir> <prefix> <task_list> [N=8] [TOTAL=128]
 # env: MODEL_DIR, SPEC ("" = plain decoding, unset = ngram), GPU_UTIL. Launch it detached under the watchdog.
 set -u
 cd "$(dirname "$0")/../../.."
@@ -23,7 +23,7 @@ echo "server up $(date -u +%H:%MZ), $N samples x $(envs/harness/bin/python -I ki
 OUT0=runs/${PREFIX}; mkdir -p "$OUT0"
 curl -s localhost:8000/metrics > "$OUT0/metrics_before.txt"
 # one capture proxy for all samples (full request/response pairs for training)
-LOG_PROXY_FULL="$OUT0/requests.jsonl.gz" envs/harness/bin/python -I kits/swe-agent/run/log_proxy.py "$OUT0/proxy_settings.jsonl" 8001 8000 > "$OUT0/proxy.log" 2>&1 &
+LOG_PROXY_FULL="$OUT0/requests.jsonl.gz" envs/harness/bin/python -I kits/swe-agent/experiments/log_proxy.py "$OUT0/proxy_settings.jsonl" 8001 8000 > "$OUT0/proxy.log" 2>&1 &
 PXPID=$!
 for i in $(seq 1 20); do curl -s -m 2 127.0.0.1:8001/v1/models >/dev/null && break; sleep 1; done
 PORT=8001; curl -s -m 2 127.0.0.1:8001/v1/models >/dev/null || { echo "PROXY_FAILED, running direct"; PORT=8000; }
@@ -39,25 +39,15 @@ for k in $(seq 1 $N); do
   RUN=${PREFIX}_s$k; OUT=runs/$RUN; mkdir -p "$OUT"
   # the runner's heartbeat watches <run dir>/requests.jsonl.gz: point it at the shared capture
   ln -sfn "../${PREFIX}/requests.jsonl.gz" "$OUT/requests.jsonl.gz"
-  # resume: skip tasks this run id already has a ledger row for
-  TODO=$(envs/harness/bin/python -I - "$RUN" "$TASKS" <<'PY'
-import json, sys
-sys.path.insert(0, "kits/swe-agent/run")
-import manifest
-run, tasks = sys.argv[1], manifest.ids(sys.argv[2])
-done = {json.loads(l)["id"] for l in open("results/task_runs.jsonl") if f'"run_id": "{run}"' in l}
-print(" ".join(t for t in tasks if t not in done))
-PY
-)
-  echo "SAMPLE_START $RUN todo=$(echo $TODO | wc -w) $(date -u +%H:%MZ)"
-  [ -z "$TODO" ] && continue
+  echo "SAMPLE_START $RUN $(date -u +%H:%MZ)"  # a relaunch resumes: the runner skips tasks this run id already has
   MODEL_PORT=$PORT RUN_ID=$RUN EVAL_TIER=hist EVAL_NOTE="sample $k of $N: $AGENT on $TASKS, $PER at once ($TOTAL total)" CONCURRENCY=$PER \
-    envs/harness/bin/python -I kits/swe-agent/run/run_tasks.py "$AGENT" "$OUT" $TODO > "$OUT/run.log" 2>&1 &
+    envs/harness/bin/python -I kits/swe-agent/run/run_tasks.py "$AGENT" "$OUT" $TASKS > "$OUT/run.log" 2>&1 &
   PIDS+=($!)
   sleep 20  # stagger the starts so 128 sandboxes do not all build in the same second
 done
 # relay every runner's heartbeat and results into this log, so the watchdog sees one live log
-tail -q -F runs/${PREFIX}_s*/run.log 2>/dev/null | grep --line-buffered -E '^(HEARTBEAT|ALL_DONE|Traceback)|^RESULT' | cut -c1-160 &
+# (--pid: tail ends with this script; killing $TAILPID alone would stop only the last command of the pipe)
+tail -q -F --pid=$$ runs/${PREFIX}_s*/run.log 2>/dev/null | grep --line-buffered -E '^(HEARTBEAT|ALL_DONE|Traceback)|^RESULT' | cut -c1-160 &
 TAILPID=$!
 RC=0; for p in "${PIDS[@]}"; do wait $p || RC=$?; done
 kill $TAILPID 2>/dev/null

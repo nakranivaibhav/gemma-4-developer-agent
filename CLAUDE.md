@@ -181,7 +181,7 @@ times one unit: ≲15 min ⇒ run inline; longer ⇒ write `run.sh`, return
 DONE=/tmp/<run>.done ; rm -f "$DONE"
 setsid nohup uv run tools/run_with_watchdog.py \
   --log runs/logs/<run>.log --marker "$DONE" \
-  --idle-seconds 900 -- bash kits/swe-agent/run/run_round.sh <agent_dir> <run> <tasks> \
+  --idle-seconds 900 -- bash kits/swe-agent/experiments/round.sh <agent_dir> <run> <tasks> \
   >/dev/null 2>&1 < /dev/null &
 ```
 Then append the `LAUNCH` line. The wake is a separate cheap **marker-waiter** —

@@ -3,6 +3,7 @@
 Usage: [CONCURRENCY=N] [SANDBOX_ENV=repaired|shipped] envs/harness/bin/python -I kits/swe-agent/run/run_tasks.py <agent_dir> \
            <results_dir> <task> [...]
 A <task> is a task id or a manifest selector (smoke6, holdout, tune, usable, ...: kits/swe-agent/run/manifest.py).
+Re-running with the same RUN_ID skips the tasks that run already has a row for in results/task_runs.jsonl (resume).
 Mirrors the starter notebook's evaluation cell (Phase 1 agent + Phase 2 test verification), docker sandbox.
 Usually started through `make run` (kits/swe-agent/Makefile).
 
@@ -43,8 +44,7 @@ ROOT = manifest.ROOT
 if len(sys.argv) < 3:
     sys.exit(__doc__)
 agent_dir, results_dir = (Path(p).resolve() for p in sys.argv[1:3])
-KNOWN = {r["id"] for r in manifest.rows()}
-task_ids = [t for arg in sys.argv[3:] for t in ([arg] if arg in KNOWN else manifest.ids(arg))]
+task_ids = manifest.ids(" ".join(sys.argv[3:]))
 FLEET_DIR, FLEET_GPU = os.environ.get("FLEET_DIR"), os.environ.get("FLEET_GPU")
 if FLEET_DIR:
     import fleet  # noqa: E402
@@ -78,10 +78,21 @@ if NETWORK != "none" and _docker("network", "inspect", NETWORK, "--format", "{{.
 if not HOOK.exists():
     sys.exit(f"sandbox hook {HOOK} not found: run `make setup` (kits/swe-agent/Makefile)")
 
+def served_model():
+    """The model path the harness asks the server for: MODEL_DIR if set, else the model the running server loaded
+    (its note runs/logs/current_server.json, written by serve_model.py at start), else the competition default."""
+    if os.environ.get("MODEL_DIR"):
+        return Path(os.environ["MODEL_DIR"]).resolve()
+    note = Path(os.environ.get("SERVER_JSON") or ROOT / "runs" / "logs" / "current_server.json")
+    if note.exists():
+        return (ROOT / json.loads(note.read_text())["model_dir"]).resolve()  # stored relative to the repo root
+    return (data / "external" / "model").resolve()
+
+
 declared = validate_single_declared_model(agent_dir)
 adapters = discover_adapters(str(agent_dir), adapter_extensions=ALLOWED_ADAPTER_EXTENSIONS)
 server = VllmServer(
-    VllmConfig(model=str(Path(os.environ.get("MODEL_DIR") or data / "external" / "model").resolve()), port=int(os.environ.get("MODEL_PORT", "8000")), host="127.0.0.1"),
+    VllmConfig(model=str(served_model()), port=int(os.environ.get("MODEL_PORT", "8000")), host="127.0.0.1"),
     adapter_manifest=adapters,
 )
 models = server.create_model_registry(aliases=[declared, TARGET], model_prefix="openai/", api_key="EMPTY")
@@ -166,12 +177,27 @@ if os.environ.get("KAGGLE_CLOCK"):
         self.token_budget = CLOCKS[self.task_id] = kaggle_clock.KaggleClock(self, **_clock)
 
     SwegemmaContext.__init__ = _init_with_clock
+LEDGER = Path(os.environ.get("LEDGER") or ROOT / "results" / "task_runs.jsonl")
+LEDGER.parent.mkdir(exist_ok=True)
+# Resume: tasks this run id already has a ledger row for are skipped, so relaunching a stopped run with the same RUN_ID
+# keeps its finished work. (A fresh run id, the default, has no rows: every task runs.)
+if not FLEET_DIR and LEDGER.exists():
+    mark = f'"run_id": {json.dumps(RUN_ID)}'
+    done_before = {json.loads(line)["id"] for line in open(LEDGER) if mark in line}
+    if done_before:
+        todo = [t for t in task_ids if t not in done_before]
+        print(f"RESUME {RUN_ID}: {len(task_ids) - len(todo)} of {len(task_ids)} tasks already in the ledger, {len(todo)} to run",
+              flush=True)
+        if not todo:
+            print(f"ALL_DONE tasks=0 concurrency={CONCURRENCY} wall_seconds=0 (nothing left)", flush=True)
+            sys.exit(0)
+        if (results_dir / "settings.json").exists():  # keep the first launch's settings next to the new ones
+            (results_dir / "settings_before_resume.json").write_text((results_dir / "settings.json").read_text())
+        task_ids = todo
 snapshot_agent(agent_dir, results_dir / "agent_snapshot")
 (results_dir / "settings.json").write_text(json.dumps(SETTINGS, indent=1))
 PINNED = {k: v for k, v in SETTINGS.items() if k not in ("files", "tasks", "sub_agents", "tools")}
 PINNED["file_sha"] = {k: v["sha"] for k, v in SETTINGS["files"].items()}  # every prompt, config and adapter weight file
-LEDGER = Path(os.environ.get("LEDGER") or ROOT / "results" / "task_runs.jsonl")
-LEDGER.parent.mkdir(exist_ok=True)
 HOLDOUT = manifest.holdout()
 TAGS = manifest.tags()  # labels from the task alone (kits/swe-agent/run/tag_tasks.py); tagged tasks still run, they only get a second figure
 DONE = []  # (task id, resolved) for the closing line
