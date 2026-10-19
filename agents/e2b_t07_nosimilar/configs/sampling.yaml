@@ -1,0 +1,8 @@
+# search_similar_code ablation (user 2026-10-19): agents/e2b_t07 with only search_similar_code removed from agent.yaml
+# and the code_analyzer sub-agent (its prompt now names the other two graph tools). Same temperature 0.7 and limits.
+temperature: 0.7
+top_p: 0.95
+max_output_tokens: 8192
+thinking_config:
+  thinking_budget: 4096
+  include_thoughts: true
