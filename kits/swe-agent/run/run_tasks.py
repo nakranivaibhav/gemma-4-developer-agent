@@ -121,7 +121,8 @@ cfg = EvalConfig(
         compaction_interval=15, overlap_size=2, token_threshold=14336, event_retention_size=5
     ),
     graph_dir=str(data / "graphs"),
-    embeddings_dir=str(data / "embeddings"),
+    # EMBEDDINGS_DIR: stand-in node embeddings (same file names as data/embeddings) for an official-vs-stand-in A/B
+    embeddings_dir=os.path.abspath(os.environ.get("EMBEDDINGS_DIR", data / "embeddings")),
     wheels_dir=Path(os.path.abspath(os.environ.get("WHEELS_DIR", data / "wheels"))),  # WHEELS_DIR: a patched wheel set for env tests
     verbose=False,
     display_mode="quiet",
@@ -156,6 +157,8 @@ RUN_ID = os.environ.get("RUN_ID") or f"{time.strftime('%Y%m%dT%H%MZ', time.gmtim
 SETTINGS = pin_settings(agent_dir)
 if os.environ.get("SANDBOX_CPU_SHARES"):
     SETTINGS["sandbox_cpu_shares"] = int(os.environ["SANDBOX_CPU_SHARES"])
+if os.environ.get("EMBEDDINGS_DIR"):  # recorded only when it differs from the official vectors
+    SETTINGS["embeddings_dir"] = rel(cfg.embeddings_dir)
 SETTINGS.update(run_id=RUN_ID, tier=os.environ.get("EVAL_TIER", ""), note=os.environ.get("EVAL_NOTE", ""),
                 concurrency=CONCURRENCY, tasks=task_ids,
                 sandbox={"env": SANDBOX_ENV, "image": IMAGE, "image_id": IMAGE_ID[:19], "network": NETWORK, "hook": rel(HOOK),
