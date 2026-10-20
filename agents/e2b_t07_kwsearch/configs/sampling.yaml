@@ -1,0 +1,8 @@
+# Keyword-search variant (user 2026-10-20): agents/e2b_t07 with one prompt change, in system.md and analyzer.md:
+# search_similar_code gets two to four plain words, never a single symbol name (keyword route, no vectors). Same temperature 0.7 and limits.
+temperature: 0.7
+top_p: 0.95
+max_output_tokens: 8192
+thinking_config:
+  thinking_budget: 4096
+  include_thoughts: true
