@@ -1,6 +1,6 @@
 <!-- code_graph_builder.md contract
-WHAT: how our code-graph builder (graph/code_graph.py) reproduces the official graphs, how well it matches, and what is
-still open (embeddings). Numbers come from graph/graph_match.py -> results/graph_match.csv. Update in place when the
+WHAT: how our code-graph builder (graph/code_graph.py) reproduces the official graphs and how well it matches
+(embeddings: embeddings.md). Numbers come from graph/graph_match.py -> results/graph_match.csv. Update in place when the
 builder or the check changes; date each update.
 -->
 # Code graph builder, as of 2026-10-17
@@ -71,9 +71,8 @@ envs/harness/bin/python -I graph/code_graph.py <repo_checkout> <repo>_<commit> -
 The harness then needs an embedding file of the same name in `data/embeddings/` (over 100 bytes) before it shows
 the graph tools to the agent.
 
-## Open: embeddings
+## Embeddings (closed 2026-10-20)
 
-The graph is done; the embeddings are not. The official vectors come from a Google-internal model (see
-`outside_data.md`), one 256-number vector per node id. Next step: build stand-in embeddings and check them against
-the 127 official files on the tasks we have, using the measures the forum used (rank agreement with the official
-vectors' nearest neighbours, and top-10 hit rate for the changed function).
+The official vectors cannot be rebuilt, and the agent does not need them to: on the Kaggle tasks random vectors score
+close to the official ones. Outside repos get random vectors from `graph/random_embeddings.py`. Details and numbers:
+`embeddings.md`.

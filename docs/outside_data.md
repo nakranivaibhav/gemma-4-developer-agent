@@ -3,7 +3,7 @@ WHAT: the outside SWE data we can train on (task sets and solved-run sets), what
 harness, and the plan for the first outside run. Full source table with links: docs/training_research.md section 1-2.
 Update in place as steps land; date each update. Mark anything not yet checked as "unverified".
 -->
-# Outside training data, as of 2026-10-17
+# Outside training data, as of 2026-10-20
 
 Our own 77 training tasks give E2B only 8–13 mixed tasks (`pass_histogram_e2b.md`), so the RL pool has to come from
 outside task sets. None of them has been downloaded or run yet. Research done 2026-10-15; sources and links in
@@ -88,10 +88,9 @@ How much our agents use these tools (from the run traces, 2026-10-17):
 
 - **Graphs: done 2026-10-17.** `graph/code_graph.py` rebuilds all 127 official graphs exactly (same nodes, texts and
   edges; only the file order differs, which is random in the official files too). Details: `code_graph_builder.md`.
-- **Embeddings:** the originals come from a Google-internal pipeline (paths in
-  `refs/harness_src/swegemma/graph/embedding_utils.py`); the model is not public. We would use a stand-in 256-number
-  code embedding, so `search_similar_code` returns different neighbours than on Kaggle. Measure how close by
-  comparing top-10 results against the given files on the local repos.
+- **Embeddings: closed 2026-10-20, random vectors.** The originals cannot be rebuilt, and on the Kaggle tasks random
+  vectors score close to them (69 vs 75 passes per 984, not significant). `graph/random_embeddings.py` writes them for
+  any graph; the runner takes the folder via `EMBEDDINGS_DIR`. Details: `embeddings.md`.
 - **Cost:** CPU only. SWE-Gym needs one graph per task commit (2,438); SWE-smith-py one per repo (about 131).
 
 ### What the forum says (checked 2026-10-17)
@@ -117,9 +116,9 @@ Full text of 215 of the 216 topics read (2026-10-17); 24 of them mention the gra
 
 - **Graphs:** buildable to match. The format and its gaps are documented above, so a builder must copy the gaps too
   (no async, `calls` only, both directions, no `self` calls) to look like what Kaggle serves.
-- **Embeddings:** the method is unknown and the hosts have not answered. They seem to come from the graph rather
-  than the code text, so a graph embedding (for example node2vec on our own graph, 256 numbers) is the closest
-  stand-in. The originals are weak anyway (near-collapsed, 9% top-10 hit rate).
+- **Embeddings:** the method is unknown and the hosts have not answered. Measured 2026-10-18 to 2026-10-20 (correcting
+  the earlier guess above): they are a graph network over the raw code text of a node and its neighbours, and no
+  public encoder comes close. Use random vectors (`embeddings.md`).
 - **Option to skip graphs entirely:** the harness adds the "Code Intelligence Tools" prompt section only for graph
   tools the agent lists in its `agent.yaml` (`_has_tool` in `refs/harness_src/swegemma/harness/agent_runner.py`). If
   our agent drops the 3 graph tools, the prompt is the same with or without graph files, and outside tasks need no
@@ -169,7 +168,8 @@ E2B, temperature 0.7, all 123 tasks × 8 tries in each arm, same server, load an
 ## Plan (step 1 done, rest proposed)
 
 1. **Decide on graph tools: done 2026-10-17, keep them** (72 vs 54 passes, above). So outside tasks need graphs
-   and embeddings. Graph builder done the same day (127/127 exact, `code_graph_builder.md`); embeddings next. The
+   and embeddings. Graph builder done the same day (127/127 exact, `code_graph_builder.md`); embeddings settled
+   2026-10-20 as random vectors (`graph/random_embeddings.py`, `embeddings.md`). The
    adapter checks of step 2 (gold patch passes, empty patch fails) do not need either; the E2B try does.
 2. **Smoke run, 5 tasks** from SWE-Gym (adapter, graphs, gold patch passes, empty patch fails, one E2B try).
 3. **Same smoke run on SWE-smith-py.** One image per repo means about 131 images for 51k tasks, so disk and pull

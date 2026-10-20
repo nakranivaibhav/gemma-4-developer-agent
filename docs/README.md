@@ -3,7 +3,7 @@ WHAT: the index of this competition's write-ups, plus the handful of facts every
 A new write-up goes in this folder and gets a line here. The journal (../journal.md) stays the event history;
 these files are the current picture and are updated in place.
 -->
-# Gemma 4 developer agent: docs, as of 2026-10-17
+# Gemma 4 developer agent: docs, as of 2026-10-20
 
 Focus now: training only (curate SWE data, then RL). Kaggle submissions are parked.
 
@@ -16,7 +16,8 @@ Focus now: training only (curate SWE data, then RL). Kaggle submissions are park
 | [measured_numbers.md](measured_numbers.md) | Output-token budgets per model, fixed run settings, where the sampling config lives, Kaggle speeds |
 | [pass_histogram_e2b.md](pass_histogram_e2b.md) | E2B pass counts over 8 tries per task: how many tasks are in the mixed band |
 | [outside_data.md](outside_data.md) | Outside task sets and solved-run sets, the adapter we need, graph-tools A/B result, plan for the first outside run |
-| [code_graph_builder.md](code_graph_builder.md) | Our code-graph builder: rebuilds all 127 official graphs exactly (nodes, texts, edges); embeddings still open |
+| [code_graph_builder.md](code_graph_builder.md) | Our code-graph builder: rebuilds all 127 official graphs exactly (nodes, texts, edges) |
+| [embeddings.md](embeddings.md) | The official node embeddings: what they are, why we cannot rebuild them, what they are worth to the agent; decision: random vectors for outside repos |
 | [training_prep.md](training_prep.md) | Local training data on hand, the tools that make it, open training steps |
 | [training_research.md](training_research.md) | Full research notes with links: datasets, Gemma 4 LoRA stack, RL frameworks |
 | [autopilot/](autopilot/README.md) | The Claude Code autopilot that drives the work: playbook, design, decision cards |
