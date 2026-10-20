@@ -1,0 +1,8 @@
+# search-code skill (user 2026-10-20): agents/e2b_t07_nosimilar plus the search-code skill (skills/search-code, stdlib script,
+# words or symbol name -> path:line of matching defs) on the root agent, named first in system.md step 1. Same temperature 0.7 and limits.
+temperature: 0.7
+top_p: 0.95
+max_output_tokens: 8192
+thinking_config:
+  thinking_budget: 4096
+  include_thoughts: true
