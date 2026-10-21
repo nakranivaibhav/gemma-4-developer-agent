@@ -41,12 +41,21 @@ one of these folders.
 
 ## E2B experiments
 
-| agent | what it is | task-runs | solved |
-|---|---|---|---|
-| `e2b_t07` | `lean_e2b` at temperature 0.7: 8 samples per task for a pass-count histogram | 984 | 72 (7%) |
-| `e2b_t07_nograph` | `e2b_t07` without the 3 code-graph tools: the graph-tools A/B | 984 | 54 (5%) |
+All on the 123 usable tasks x 8 samples per round (984 task-runs), same server settings, so the rows pair up.
 
-The A/B is paired on the same 123 tasks x 8 samples: with graph tools 72 passes, without 54, P(no-graph better) = 0.007.
+| agent | what it is | rounds (run ids) | solved per round |
+|---|---|---|---|
+| `e2b_t07` | `lean_e2b` at temperature 0.7: 8 samples per task for a pass-count histogram | `hist_e2b_t07`, `_r2` | 72, 78 |
+| `e2b_t07` + random vectors | the same folder, with `EMBEDDINGS_DIR` pointing at random node vectors | `hist_e2b_t07_randvec`, `_r2` | 71, 67 |
+| `e2b_t07_nograph` | `e2b_t07` without the 3 code-graph tools | `hist_e2b_t07_nograph` | 54 |
+| `e2b_t07_nosimilar` | `e2b_t07` without `search_similar_code` (main agent and analyzer) | `hist_e2b_t07_nosimilar`, `_r2` | 66, 58 |
+| `e2b_t07_kwsearch` | `e2b_t07` plus a prompt rule: query `search_similar_code` with plain words only (E2B did not follow it) | `hist_e2b_t07_kwsearch`, `_r2` | 70, 66 |
+| `e2b_t07_skillsearch` | `e2b_t07_nosimilar` plus a `search-code` skill script (words or a name -> file:line), first in the Locate step | `hist_e2b_t07_skillsearch` | not scored: the model server froze after 247 runs (vLLM list-argument parser hang, `analysis/gemma4_parser_hang.py`); folder now holds the freeze-safe `{"query": ...}` form, which E2B fills in correctly on only about 30% of calls. Parked |
+| `r07_lean_e2b`, `r07_lean_e2b_t10` | lean-prompt baseline: no analyzer, no adapter, 9-line facts-only prompt; temp 0.7 and 1.0 | `v_e2b_lean_v1`, `v_e2b_lean_v1_t10` (samples `_p1..p8`) | running |
+
+What the rows say (paired, pooled over rounds): the graph tools help (no graph 54 vs 75 per round), most of it is
+`search_similar_code` (without it 62), and Google's vectors add little over random ones (69). Details:
+`docs/embeddings.md`.
 
 ## Harness probes (a few tasks each, to learn how the harness behaves)
 

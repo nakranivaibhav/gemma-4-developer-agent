@@ -101,7 +101,7 @@ def is_example(rel):
 def main():
     words, k = parse_args(sys.argv[1:])
     if not words:
-        print('usage: args=["word", "word", ...] (2 to 4 words about the code you want), or a symbol name')
+        print('usage: args={"query": "two to four words"} or args={"query": "Class.method"}')
         return
     query = " ".join(words)
     qwords = list(dict.fromkeys(split_words(query)))
