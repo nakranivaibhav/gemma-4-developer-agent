@@ -1,0 +1,9 @@
+# Lean facts study, arm B (user 2026-10-21, bundled fact add-back after the lean baseline):
+# r08_lean_facts (same prompt) plus the code_analyzer sub-agent from e2b_t07
+# (sub_agents/code_analyzer.yaml, prompts/analyzer.md, unchanged). Temp 0.7 as r07.
+temperature: 0.7
+top_p: 0.95
+max_output_tokens: 8192
+thinking_config:
+  thinking_budget: 4096
+  include_thoughts: true
