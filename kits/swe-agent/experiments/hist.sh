@@ -5,6 +5,7 @@
 # samples are independent random draws at the agent's temperature.
 # usage: bash kits/swe-agent/experiments/hist.sh <agent_dir> <prefix> <task_list> [N=8] [TOTAL=128]
 # env: MODEL_DIR, SPEC ("" = plain decoding, unset = ngram), GPU_UTIL. Launch it detached under the watchdog.
+#      SAMPLE_TAG (default s: run ids <prefix>_s1..sN), RUN_LABEL (put first in every row's note, e.g. prompt=lean_v1).
 set -u
 cd "$(dirname "$0")/../../.."
 AGENT=$1; PREFIX=$2; TASKS=$3; N=${4:-8}; TOTAL=${5:-128}
@@ -36,18 +37,18 @@ SYS=$OUT0/sys.csv; echo "utc,cpu_busy_pct,load1,mem_used_gb,gpu_util_pct,gpu_mem
 CPU_PID=$!
 PIDS=()
 for k in $(seq 1 $N); do
-  RUN=${PREFIX}_s$k; OUT=runs/$RUN; mkdir -p "$OUT"
+  RUN=${PREFIX}_${SAMPLE_TAG:-s}$k; OUT=runs/$RUN; mkdir -p "$OUT"
   # the runner's heartbeat watches <run dir>/requests.jsonl.gz: point it at the shared capture
   ln -sfn "../${PREFIX}/requests.jsonl.gz" "$OUT/requests.jsonl.gz"
   echo "SAMPLE_START $RUN $(date -u +%H:%MZ)"  # a relaunch resumes: the runner skips tasks this run id already has
-  MODEL_PORT=$PORT RUN_ID=$RUN EVAL_TIER=hist EVAL_NOTE="sample $k of $N: $AGENT on $TASKS, $PER at once ($TOTAL total)" CONCURRENCY=$PER \
+  MODEL_PORT=$PORT RUN_ID=$RUN EVAL_TIER=hist EVAL_NOTE="${RUN_LABEL:+$RUN_LABEL; }sample $k of $N: $AGENT on $TASKS, $PER at once ($TOTAL total)" CONCURRENCY=$PER \
     envs/harness/bin/python -I kits/swe-agent/run/run_tasks.py "$AGENT" "$OUT" $TASKS > "$OUT/run.log" 2>&1 &
   PIDS+=($!)
   sleep 20  # stagger the starts so 128 sandboxes do not all build in the same second
 done
 # relay every runner's heartbeat and results into this log, so the watchdog sees one live log
 # (--pid: tail ends with this script; killing $TAILPID alone would stop only the last command of the pipe)
-tail -q -F --pid=$$ runs/${PREFIX}_s*/run.log 2>/dev/null | grep --line-buffered -E '^(HEARTBEAT|ALL_DONE|Traceback)|^RESULT' | cut -c1-160 &
+tail -q -F --pid=$$ runs/${PREFIX}_${SAMPLE_TAG:-s}*/run.log 2>/dev/null | grep --line-buffered -E '^(HEARTBEAT|ALL_DONE|Traceback)|^RESULT' | cut -c1-160 &
 TAILPID=$!
 RC=0; for p in "${PIDS[@]}"; do wait $p || RC=$?; done
 kill $TAILPID 2>/dev/null

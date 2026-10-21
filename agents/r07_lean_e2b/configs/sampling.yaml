@@ -1,0 +1,8 @@
+# Lean-prompt E2B baseline (user 2026-10-21, plan "E2B baseline with the lean prompt"): r06_garble with no adapter,
+# no analyzer sub-agent, the lean system prompt, temperature 0.7. Reference: e2b_t07 (old prompt, same temperature).
+temperature: 0.7
+top_p: 0.95
+max_output_tokens: 8192
+thinking_config:
+  thinking_budget: 4096
+  include_thoughts: true

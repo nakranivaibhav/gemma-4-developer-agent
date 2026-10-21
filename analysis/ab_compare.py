@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]  # the repo root
 
 
 def load(prefix):
-    pat = re.compile(rf"^{re.escape(prefix)}_s(\d+)$")
+    pat = re.compile(rf"^{re.escape(prefix)}_[sp](\d+)$")  # hist.sh samples: _s1.. or _p1.. (SAMPLE_TAG)
     rows = {}
     for r in map(json.loads, open(ROOT / "results" / "task_runs.jsonl")):
         m = pat.match(str(r.get("run_id")))

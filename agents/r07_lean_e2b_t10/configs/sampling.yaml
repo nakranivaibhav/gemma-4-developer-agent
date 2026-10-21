@@ -1,0 +1,8 @@
+# Lean-prompt E2B baseline at temperature 1.0 (plan step 3, optional pass for the RL rollout temperature): r07_lean_e2b with
+# only the temperature changed (0.7 -> 1.0). Compare with r07_lean_e2b on the same 123 tasks x 8.
+temperature: 1.0
+top_p: 0.95
+max_output_tokens: 8192
+thinking_config:
+  thinking_budget: 4096
+  include_thoughts: true
