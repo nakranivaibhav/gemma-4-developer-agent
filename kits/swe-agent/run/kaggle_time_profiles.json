@@ -163,5 +163,38 @@
     "tool_s_per_call": 1.9,
     "setup_min": 0.5,
     "source": "results/kaggle_speed/e2b/speed_sweep.csv setting=no_lora requests_to=base model"
+  },
+  "l4x4_e2b_adapter": {
+    "per_call_s": 0.013,
+    "prefill_tok_s": 7585.7,
+    "decode": [
+      [
+        1000,
+        110.54
+      ],
+      [
+        4000,
+        103.7
+      ],
+      [
+        8000,
+        98.2
+      ],
+      [
+        16000,
+        92.3
+      ],
+      [
+        24000,
+        89.01
+      ],
+      [
+        30000,
+        86.78
+      ]
+    ],
+    "tool_s_per_call": 1.9,
+    "setup_min": 0.5,
+    "source": "results/kaggle_speed/e2b_sub03/speed_sweep.csv setting=readme_lora requests_to=adapter main_lora | tool_s_per_call 1.9 copied from l4x4_31b_adapter (pending a fit on the e2b_sub03 e2e tasks)"
   }
 }

@@ -5,7 +5,8 @@
 # samples are independent random draws at the agent's temperature.
 # usage: bash kits/swe-agent/experiments/hist.sh <agent_dir> <prefix> <task_list> [N=8] [TOTAL=128]
 # env: MODEL_DIR, SPEC ("" = plain decoding, unset = ngram), GPU_UTIL. Launch it detached under the watchdog.
-#      SAMPLE_TAG (default s: run ids <prefix>_s1..sN), RUN_LABEL (put first in every row's note, e.g. prompt=lean_v1).
+#      SERVE_AGENT (default AGENT): agent folder whose adapters the server loads, so a base arm can run on the
+#      same server as its adapter arm. SAMPLE_TAG (default s: run ids <prefix>_s1..sN), RUN_LABEL (put first in every row's note, e.g. prompt=lean_v1).
 set -u
 cd "$(dirname "$0")/../../.."
 AGENT=$1; PREFIX=$2; TASKS=$3; N=${4:-8}; TOTAL=${5:-128}
@@ -13,7 +14,7 @@ PER=$(( TOTAL / N ))
 # stop any leftover server first (a stranded one hijacks port 8000)
 sp=$(ps -eo pid,args | grep '[v]llm.entrypoints' | awk '{print $1}')
 [ -n "$sp" ] && { echo "CLEAN stopping vLLM $sp"; kill -INT $sp; for i in $(seq 60); do ps -p $sp >/dev/null 2>&1 || break; sleep 2; done; }
-MAX_NUM_SEQS=$TOTAL setsid nohup bash kits/swe-agent/serve/serve_fast.sh "$AGENT" > "runs/logs/serve_${PREFIX}.log" 2>&1 < /dev/null &
+MAX_NUM_SEQS=$TOTAL setsid nohup bash kits/swe-agent/serve/serve_fast.sh "${SERVE_AGENT:-$AGENT}" > "runs/logs/serve_${PREFIX}.log" 2>&1 < /dev/null &
 SPID=$!
 trap 'kill -INT $(ps -eo pid,args | grep "[v]llm.entrypoints" | awk "{print \$1}") 2>/dev/null; kill $PXPID $CPU_PID 2>/dev/null' EXIT
 for i in $(seq 1 120); do curl -s -m 2 127.0.0.1:8000/v1/models >/dev/null && break
@@ -48,7 +49,7 @@ for k in $(seq 1 $N); do
 done
 # relay every runner's heartbeat and results into this log, so the watchdog sees one live log
 # (--pid: tail ends with this script; killing $TAILPID alone would stop only the last command of the pipe)
-tail -q -F --pid=$$ runs/${PREFIX}_${SAMPLE_TAG:-s}*/run.log 2>/dev/null | grep --line-buffered -E '^(HEARTBEAT|ALL_DONE|Traceback)|^RESULT' | cut -c1-160 &
+tail -q -F --pid=$$ runs/${PREFIX}_${SAMPLE_TAG:-s}*/run.log 2>/dev/null | grep --line-buffered -E '^(HEARTBEAT|ALL_DONE|Traceback)|^RESULT' | awk '{print substr($0, 1, 160); fflush()}' &  # awk+fflush, not cut: cut block-buffers into a file, so the watchdog saw silence for ~25 lines at a time
 TAILPID=$!
 RC=0; for p in "${PIDS[@]}"; do wait $p || RC=$?; done
 kill $TAILPID 2>/dev/null

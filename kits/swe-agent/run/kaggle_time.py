@@ -83,6 +83,16 @@ def trace_calls(path):
     return calls, tools
 
 
+def task_seconds(profile, calls, tools, speed=1.0):
+    """Kaggle-seconds of one task without the setup term: the quantity kaggle_clock.py caps (same speed factor)."""
+    s = 0.0
+    for p, new, o in calls:
+        s += profile['per_call_s'] + o / (decode_rate(profile, p) * speed)
+        if profile.get('prefill_tok_s'):
+            s += new / (profile['prefill_tok_s'] * speed)
+    return s + profile.get('tool_s_per_call', 0.0) * tools
+
+
 def task_minutes(profile, calls, tools):
     s = 0.0
     for p, new, o in calls:

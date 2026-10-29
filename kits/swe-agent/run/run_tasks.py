@@ -38,6 +38,35 @@ from swegemma.models.discovery import validate_single_declared_model
 
 litellm.drop_params = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # the helpers next to this file (python -I leaves it off)
+
+# ADK 1.x calls a sync tool function directly on the event loop (FunctionTool._invoke_callable), and the harness tools
+# are sync (run_command = a blocking docker exec). So with CONCURRENCY > 1 every tool call paused every other task in
+# this process until it returned, and one hung command paused them all for its full timeout (seen 2026-10-23: a
+# repro server froze 16 tasks for 300 s). Sync tools now run in a worker thread; what a tool does and returns is
+# unchanged, only the scheduling. The scorer runs one task at a time, where this makes no difference.
+import concurrent.futures  # noqa: E402
+import contextvars  # noqa: E402
+import functools  # noqa: E402
+import inspect  # noqa: E402
+
+import google.adk.tools.function_tool as _adk_ft  # noqa: E402
+
+_TOOL_POOL = concurrent.futures.ThreadPoolExecutor(max_workers=max(8, int(os.environ.get("CONCURRENCY", "1")) * 2),
+                                                   thread_name_prefix="tool")
+
+
+async def _invoke_callable_threaded(self, target, args_to_call):
+    if inspect.iscoroutinefunction(target) or (hasattr(target, "__call__") and inspect.iscoroutinefunction(target.__call__)):
+        return await target(**args_to_call)
+    call = functools.partial(contextvars.copy_context().run, target, **args_to_call)
+    return await asyncio.get_running_loop().run_in_executor(_TOOL_POOL, call)
+
+
+_adk_ft.FunctionTool._invoke_callable = _invoke_callable_threaded
+import rollout_tag  # noqa: E402  ROLLOUT_TAG=1: each model call carries X-Rollout-Id <run_id>/<task_id> (RL capture)
+
+if os.environ.get("ROLLOUT_TAG") == "1":
+    rollout_tag.install()
 import manifest  # noqa: E402
 
 ROOT = manifest.ROOT
@@ -70,8 +99,25 @@ def _docker(*args):
 
 
 IMAGE_ID = _docker("image", "inspect", IMAGE, "--format", "{{.Id}}")
+
+
+def _all_outside():
+    """True when every task to run carries its own docker_image (outside tasks): the shared sandbox image is then
+    unused, e.g. on a remote Docker host (REMOTE=revideo) that only holds task images."""
+    tj = Path(os.environ.get("TASKS_JSONL") or data / "tasks.jsonl")
+    own = set()
+    with open(tj) as f:
+        for line in f:
+            r = json.loads(line)
+            if r.get("docker_image"):
+                own.add(r["instance_id"])
+    return bool(task_ids) and set(task_ids) <= own
+
+
 if IMAGE_ID is None:
-    sys.exit(f"docker image {IMAGE} not found: run `make setup` (kits/swe-agent/Makefile)")
+    if not _all_outside():
+        sys.exit(f"docker image {IMAGE} not found: run `make setup` (kits/swe-agent/Makefile)")
+    IMAGE_ID = "absent (outside tasks only)"
 if NETWORK != "none" and _docker("network", "inspect", NETWORK, "--format", "{{.Id}}") is None:
     sys.exit(f"docker network {NETWORK} not found: docker network create --internal --subnet 10.255.0.0/16 "
              f"--gateway 10.255.0.1 -o com.docker.network.bridge.enable_icc=false {NETWORK}")
@@ -92,17 +138,25 @@ def served_model():
 
 declared = validate_single_declared_model(agent_dir)
 adapters = discover_adapters(str(agent_dir), adapter_extensions=ALLOWED_ADAPTER_EXTENSIONS)
+# Kaggle clock (kits/swe-agent/run/kaggle_clock.py): the STANDARD task cut since 2026-10-23, on unless KAGGLE_CLOCK=off.
+# A task ends when its predicted Kaggle-seconds pass the cap; the wall-clock limit is then only a hang guard.
+import kaggle_clock  # noqa: E402
+
+_has_adapter = bool(re.search(r"^adapter:\s*\S", (agent_dir / "agent.yaml").read_text(), re.M))
+_clock, _clock_pin = kaggle_clock.settings(str(declared), _has_adapter) or (None, None)
 server = VllmServer(
     VllmConfig(model=str(served_model()), port=int(os.environ.get("MODEL_PORT", "8000")), host="127.0.0.1"),
     adapter_manifest=adapters,
 )
 models = server.create_model_registry(aliases=[declared, TARGET], model_prefix="openai/", api_key="EMPTY")
 
+# TASKS_JSONL: another task file with the same ids, e.g. repaired issue text (training/judge/run_fixer.py); default data/tasks.jsonl
+TASKS_JSONL = Path(os.environ.get("TASKS_JSONL") or data / "tasks.jsonl")
 ev = yaml.safe_load((agent_dir / "eval_config.yaml").read_text())
 ev = ev.get("evaluation", ev)
 limits, gen_constraints = build_submission_limits()
 cfg = EvalConfig(
-    tasks_path=data / "tasks.jsonl",
+    tasks_path=TASKS_JSONL,
     snapshots_dir=data / "snapshots",
     results_dir=results_dir,
     submission_dir=agent_dir,
@@ -110,7 +164,8 @@ cfg = EvalConfig(
     sandbox="docker",
     image=IMAGE,
     timeout_seconds=int(ev.get("timeout_seconds", 300)),
-    max_time_minutes=float(ev.get("max_time_minutes", 60.0)),
+    # with the clock on, the wall limit is a hang guard (local wall time depends on our load, not on Kaggle time)
+    max_time_minutes=float(os.environ.get("WALL_GUARD_MINUTES", 240)) if _clock else float(ev.get("max_time_minutes", 60.0)),
     max_tool_calls=int(ev.get("max_tool_calls", 100)),
     max_turns=int(ev["max_turns"]) if ev.get("max_turns") is not None else None,
     limits=limits,
@@ -127,7 +182,8 @@ cfg = EvalConfig(
     verbose=False,
     display_mode="quiet",
 )
-if os.environ.get("SANDBOX_CPU_SHARES") or FLEET_DIR:  # lower CPU weight for this run's sandboxes, so another run on this machine keeps its speed
+if True:  # every sandbox carries its run id (label swegemma_run), so a stopped run's leftovers can be removed by label;
+    # optional: lower CPU weight for this run's sandboxes (SANDBOX_CPU_SHARES), fleet labels (FLEET_DIR)
     # swegemma 0.2.10 has no option for extra container settings, so its docker call is wrapped here.
     import docker.models.containers as _dc
 
@@ -138,12 +194,21 @@ if os.environ.get("SANDBOX_CPU_SHARES") or FLEET_DIR:  # lower CPU weight for th
             k.setdefault("cpu_shares", int(os.environ["SANDBOX_CPU_SHARES"]))
         if FLEET_DIR:  # label the sandbox with its GPU, so a stopped GPU's leftovers can be removed by label
             k["labels"] = {**(k.get("labels") or {}), "fleet_gpu": FLEET_GPU, "fleet_run": os.environ.get("RUN_ID", "")}
+        k["labels"] = {**(k.get("labels") or {}), "swegemma_run": os.environ.get("RUN_ID", "")}
         return _orig_run(self, *a, **k)
 
     _dc.ContainerCollection.run = _run_with_shares
-tasks = {t.instance_id: t for t in load_tasks(data / "tasks.jsonl")}
+tasks = {t.instance_id: t for t in load_tasks(TASKS_JSONL)}
 evaluator = Evaluator(cfg)
 evaluator.docker.config.network_mode = NETWORK  # the harness default is 'none'
+# Outside tasks (SWE-rebench, kits/swe-agent/outside/): rows that carry docker_image run in their own image, with their
+# own verification. Rows without it (all our Kaggle tasks) do not touch this path.
+sys.path.append(str(ROOT / "kits" / "swe-agent" / "outside"))
+import outside  # noqa: E402
+
+OUTSIDE = {k: v for k, v in outside.load_specs(TASKS_JSONL).items() if k in task_ids}
+if OUTSIDE:
+    outside.install(OUTSIDE)
 results_dir.mkdir(parents=True, exist_ok=True)
 CONCURRENCY = max(1, int(os.environ.get("CONCURRENCY", "1")))  # tasks at once, same pattern as swegemma eval --concurrency
 
@@ -163,15 +228,20 @@ SETTINGS.update(run_id=RUN_ID, tier=os.environ.get("EVAL_TIER", ""), note=os.env
                 concurrency=CONCURRENCY, tasks=task_ids,
                 sandbox={"env": SANDBOX_ENV, "image": IMAGE, "image_id": IMAGE_ID[:19], "network": NETWORK, "hook": rel(HOOK),
                          "hook_sha": hashlib.sha256(HOOK.read_bytes()).hexdigest()[:16], "wheels_dir": rel(cfg.wheels_dir)})
-# KAGGLE_CLOCK=<profile>: cut each task where the scorer's 4x L4 clock would, counted in Kaggle-seconds from the token
-# counts (kits/swe-agent/run/kaggle_clock.py). Off unless set. One clock per task, attached to the harness context as it is built.
+if OUTSIDE:  # outside tasks: their own images and verifier (kits/swe-agent/outside/outside.py), pinned here
+    SETTINGS["outside"] = {"tasks": len(OUTSIDE), "graph_dir": rel(outside.GRAPH_DIR), "embeddings_dir": rel(outside.EMB_DIR),
+                           "verify_timeout": outside.VERIFY_TIMEOUT, "git_gc": outside.GIT_GC,
+                           "adapter_sha": hashlib.sha256(Path(outside.__file__).read_bytes()).hexdigest()[:16]}
+# Kaggle clock: cut each task where the scorer's 4x L4 clock would, counted in Kaggle-seconds from the token counts
+# (kits/swe-agent/run/kaggle_clock.py). On by default (KAGGLE_CLOCK=off disables). One clock per task, attached to the
+# harness context as it is built.
 CLOCKS = {}
-_clock = None
-if os.environ.get("KAGGLE_CLOCK"):
-    import kaggle_clock  # noqa: E402
+if _clock:
     from swegemma.context import SwegemmaContext  # noqa: E402
 
-    _clock, SETTINGS["kaggle_clock"] = kaggle_clock.settings()
+    SETTINGS["kaggle_clock"] = _clock_pin
+    SETTINGS["budget_max_time_minutes"] = cfg.max_time_minutes  # the hang guard actually used, not eval_config's value
+    SETTINGS["wall_limit_role"] = "hang_guard"
     # swegemma 0.2.10 builds the per-task context inside the evaluator with no hook for a custom token budget,
     # so the constructor is wrapped to attach the clock as the context's token_budget.
     _ctx_init = SwegemmaContext.__init__
@@ -181,6 +251,10 @@ if os.environ.get("KAGGLE_CLOCK"):
         self.token_budget = CLOCKS[self.task_id] = kaggle_clock.KaggleClock(self, **_clock)
 
     SwegemmaContext.__init__ = _init_with_clock
+    # a cut ends the agent loop at once through the harness's own session timeout (kaggle_clock.py docstring, 2026-10-26)
+    import swegemma.harness.agent_runner as _agent_runner  # noqa: E402
+
+    kaggle_clock.install_cut_hook(_agent_runner)
 LEDGER = Path(os.environ.get("LEDGER") or ROOT / "results" / "task_runs.jsonl")
 LEDGER.parent.mkdir(exist_ok=True)
 # Resume: tasks this run id already has a ledger row for are skipped, so relaunching a stopped run with the same RUN_ID
@@ -210,6 +284,7 @@ DONE = []  # (task id, resolved) for the closing line
 async def run_one(i, tid, sem, extra=None):
     async with sem:
         t0 = time.time()
+        rollout_tag.ROLLOUT_ID.set(f"{RUN_ID}/{tid}")  # this asyncio task only (see rollout_tag.py)
         print(f"START {tid}", flush=True)
         try:
             r = await evaluator.evaluate_task(task=tasks[tid], task_index=i, total_tasks=len(task_ids))
@@ -228,6 +303,8 @@ async def run_one(i, tid, sem, extra=None):
                 "tests_errors": counts.get("errors", counts.get("error", 0)),
                 "harness_error": (r.error or None) and str(r.error)[:300],
             }
+            if tid in OUTSIDE:  # the task's own image and the F2P / P2P counts of verify_outside
+                row.update(image=OUTSIDE[tid]["docker_image"], outside=getattr(r, "outside", None))
         except Exception as exc:  # keep going so one bad task does not hide the others
             row = {"id": tid, "error": f"{type(exc).__name__}: {exc}"[:500], "wall_seconds": round(time.time() - t0, 1)}
         clock = CLOCKS.pop(tid, None)

@@ -3,7 +3,10 @@
 usage: python kits/swe-agent/bench/kaggle_speed_notebooks.py <out_dir> <tasks_json> [variant,variant]
 Writes <out_dir>/<variant>/{speed_test.ipynb,kernel-metadata.json,timeout_s}.
 A variant's `parts` picks the notebook sections: 'ABC' = sweep LoRA off, sweep LoRA on, real tasks;
-'A' = the LoRA-off sweep only (the E4B/E2B runs: no adapters exist for them, and the weekly GPU quota was short).
+'A' = the LoRA-off sweep only (the E4B/E2B runs: no adapters exist for them, and the weekly GPU quota was short);
+'BC' = LoRA-on sweep + real tasks (e2b_sub03: the sub03 zip as submitted, adapter kept).
+A variant's `agent` names the private dataset's folder/archive (default lean_agent); `keep_adapters` keeps the agent's
+own model and LoRA unchanged instead of switching to the variant's model without adapters.
 """
 import json
 import sys
@@ -17,6 +20,9 @@ VARIANTS = {
     '12b': dict(model='gemma-4-12b-it-qat-w4a16-ct', budget_min=50, reserve_min=7, timeout_s=3900),
     'e4b': dict(model='gemma-4-e4b-it-qat-w4a16-ct', budget_min=14, reserve_min=99, timeout_s=1000, parts='A'),
     'e2b': dict(model='gemma-4-e2b-it-qat-w4a16-ct', budget_min=14, reserve_min=99, timeout_s=1000, parts='A'),
+    # 2026-10-29: sub03 (E2B + e2b_sft_v1 LoRA r64) scored 0.00 on the LB; check the adapter loads and time real tasks.
+    'e2b_sub03': dict(model='gemma-4-e2b-it-qat-w4a16-ct', budget_min=80, reserve_min=7, timeout_s=5400, parts='BC',
+                      agent='sub03_agent', dataset='vaibhavnakrani/gemma4-sub03-agent', keep_adapters=True),
 }
 ONLY = sys.argv[3].split(',') if len(sys.argv) > 3 else list(VARIANTS)
 STARTER_IMAGE = 'gcr.io/kaggle-private-byod/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461'
@@ -70,6 +76,9 @@ RESERVE_MIN = {v['reserve_min']}       # stop starting new tasks when less than 
 # Real tasks for part C, ordered so that a cut at any point still mixes short and long tasks
 E2E_TASKS = {json.dumps(TASKS)}
 
+AGENT_NAME = '{v.get('agent', 'lean_agent')}'   # folder or <name>.tar.gz in the private agent dataset
+KEEP_ADAPTERS = {bool(v.get('keep_adapters'))}       # True: run the agent exactly as submitted (its model + LoRA)
+
 def minutes_used():
     return (time.time() - T0) / 60
 """),
@@ -118,8 +127,8 @@ print(f'Installed wheels in {time.time() - t:.0f} s')
 md("""
 ## 2. Inputs: model, competition data and the agent
 
-The agent is our current best configuration (`lean`), uploaded as a private dataset.
-For the 12B, the agent files are switched to the 12B model and the 31B-shaped LoRA adapters are removed,
+The agent comes from a private dataset (`AGENT_NAME` above). Unless `KEEP_ADAPTERS` is set,
+for a model other than the 31B the agent files are switched to that model and the 31B-shaped LoRA adapters are removed,
 the same way the Getting Started notebook does it.
 """),
 code("""
@@ -133,16 +142,16 @@ assert MODEL_PATH.exists(), f'model not attached: {MODEL_PATH}'
 # Find the agent: either an unpacked folder or the uploaded archive
 AGENT_DIR = WORK / 'agent'
 shutil.rmtree(AGENT_DIR, ignore_errors=True)
-found = sorted(glob.glob('/kaggle/input/**/lean_agent/agent.yaml', recursive=True))
+found = sorted(glob.glob(f'/kaggle/input/**/{AGENT_NAME}/agent.yaml', recursive=True))
 if found:
     shutil.copytree(Path(found[0]).parent, AGENT_DIR)
 else:
-    archive = sorted(glob.glob('/kaggle/input/**/lean_agent.tar.gz', recursive=True))[0]
+    archive = sorted(glob.glob(f'/kaggle/input/**/{AGENT_NAME}.tar.gz', recursive=True))[0]
     with tarfile.open(archive) as tf:
         tf.extractall(WORK)
-    (WORK / 'lean_agent').rename(AGENT_DIR)
+    (WORK / AGENT_NAME).rename(AGENT_DIR)
 
-if MODEL_NAME != 'gemma-4-31b-it-qat-w4a16-ct':
+if MODEL_NAME != 'gemma-4-31b-it-qat-w4a16-ct' and not KEEP_ADAPTERS:
     for y in [AGENT_DIR / 'agent.yaml', *sorted((AGENT_DIR / 'sub_agents').glob('*.yaml'))]:
         text = y.read_text()
         text = re.sub(r'^(\\s*model:\\s*).*$', rf'\\g<1>{MODEL_NAME}', text, flags=re.MULTILINE)
@@ -300,6 +309,7 @@ except Exception as exc:
 
 base_name, lora_names = served_models()
 print('served:', base_name, lora_names)
+RUN_LOG['served'] = dict(base=base_name, loras=lora_names)
 if SERVER_SETTING == 'readme_lora':
     try:
         sweep('readme_lora', base_name, 'base model')
@@ -411,6 +421,13 @@ def trim_parts(cs, parts):
     """Sweep-only runs: replace the part B / part C code with a one-line note, say so in the intro."""
     if parts == 'ABC':
         return cs
+    if parts == 'BC':
+        cs[0]['source'] += ('\n\n**This run does parts B and C only.** Part A (LoRA off) was measured for this model '
+                            'on 2026-10-15 (results/kaggle_speed/).')
+        for c in cs:
+            if c['cell_type'] == 'code' and "start_server('no_lora')" in c['source']:
+                c['source'] = "print('Part A skipped: measured earlier')"
+        return cs
     cs[0]['source'] += ('\n\n**This run does part A only** (the LoRA-off speed sweep). No LoRA adapter exists for this '
                         'model size, and LoRA-on with no adapter measured the same speed as LoRA-off on the 31B and 12B.')
     for c in cs:
@@ -435,11 +452,11 @@ for key, v in VARIANTS.items():
         c['id'] = f'cell-{i:02d}'
     (d / 'speed_test.ipynb').write_text(json.dumps(nb, indent=1))
     meta = {
-        'id': f'vaibhavnakrani/gemma4-l4x4-speed-test-{key}',
-        'title': f'Gemma4 L4x4 speed test {key}',
+        'id': f"vaibhavnakrani/gemma4-l4x4-speed-test-{key.replace('_', '-')}",
+        'title': f"Gemma4 L4x4 speed test {key.replace('_', '-')}",
         'code_file': 'speed_test.ipynb', 'language': 'python', 'kernel_type': 'notebook',
         'is_private': True, 'enable_gpu': True, 'enable_tpu': False, 'enable_internet': False,
-        'dataset_sources': ['metric/gemma-4-developer-agent-wheelhouse', 'vaibhavnakrani/gemma4-lean-agent'],
+        'dataset_sources': ['metric/gemma-4-developer-agent-wheelhouse', v.get('dataset', 'vaibhavnakrani/gemma4-lean-agent')],
         'kernel_sources': [], 'competition_sources': ['gemma-4-developer-agent'],
         'model_sources': [f"google/gemma-4/Other/{v['model']}/2"],
         'docker_image': STARTER_IMAGE, 'machine_shape': 'NvidiaL4',

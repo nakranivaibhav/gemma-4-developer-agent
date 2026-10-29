@@ -40,6 +40,7 @@ def summarize(trace_path, harness_error=None, budgets=None, max_output_tokens=No
     seen = collections.Counter()
     files_read, files_edited, files_edit_failed = set(), set(), set()
     n_calls = 0
+    last_call = None  # (tool name, failed) of the run's last tool call
     for s in steps:
         content = _content(s)
         failed = '"status": "error"' in content
@@ -50,6 +51,7 @@ def summarize(trace_path, harness_error=None, budgets=None, max_output_tokens=No
             n_calls += 1
             name, args = c["function_name"], c.get("arguments") or {}
             by_tool[name] += 1
+            last_call = (name, failed)
             counted += name not in NO_ARG_TOOLS and not was_rejected  # what the harness charges against the budget
             req, allowed = EXPECTED.get(name, (set(), None))
             if not req <= set(args) or (allowed is not None and not set(args) <= allowed):
@@ -77,6 +79,10 @@ def summarize(trace_path, harness_error=None, budgets=None, max_output_tokens=No
         ended = "budget_tool_calls"
     elif last == "final":
         ended = "final"
+    elif last_call and last_call[0] == "submit_patch" and not last_call[1]:
+        # the run stopped right after a successful submit_patch, with no closing text turn; a clean end
+        # (until 2026-10-23 these were tagged "aborted", which dropped 304 solved runs from SFT selection)
+        ended = "submitted"
     elif max_output_tokens and last_completion >= max_output_tokens:
         ended = "output_truncated"  # the closing turn hit max_output_tokens before it could call a tool
     else:

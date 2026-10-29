@@ -4,6 +4,11 @@ usage: envs/harness/bin/python -I analysis/ab_compare.py <prefix_A> <prefix_B> [
 Per task: passes out of N in A and in B. Reports total passes per arm, solved-per-try mean, tasks solved at least
 once, mixed-band counts, tasks better/worse/same, and a paired bootstrap over tasks (B=10000) of the per-task
 pass-rate difference B - A: its mean, 90% interval and P(B > A).
+
+--metric kaggle (default, the standard since 2026-10-23): a try passes only if it resolved AND stayed within the
+Kaggle clock's cap (330 Kaggle-seconds). Runs made with the clock on carry resolved_kaggle; older runs are replayed
+from their trace with the same profile the clock would pick for that agent (kaggle_clock.auto_profile). A try whose
+trace is missing counts by its plain result and is reported. --metric resolved = the old plain pass count.
 """
 import argparse
 import collections
@@ -14,18 +19,46 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "kits" / "swe-agent" / "run"))  # kit helpers
+import kaggle_clock  # noqa: E402
+import kaggle_time  # noqa: E402
 import manifest  # noqa: E402
+
+PROFILES = kaggle_time.load_profiles()
 
 ROOT = Path(__file__).resolve().parents[1]  # the repo root
 
 
-def load(prefix):
+STATS = collections.Counter()  # how each try was scored, printed at the end
+
+
+def passed(r, metric, cap_s=330.0):
+    ok = r.get("resolved") in (True, "True", 1)
+    if metric == "resolved" or not ok:
+        return ok
+    if "resolved_kaggle" in r:  # run made with the clock on
+        STATS["clock"] += 1
+        return bool(r["resolved_kaggle"])
+    s = r.get("settings") or {}
+    auto = kaggle_clock.auto_profile(s.get("model"), bool(s.get("adapter")))
+    trace = ROOT / r["trace"] if r.get("trace") else None
+    if auto is None or trace is None or not trace.exists():
+        STATS["no_replay"] += 1
+        return ok
+    name, speed = auto
+    calls, tools = kaggle_time.trace_calls(trace)
+    secs = kaggle_time.task_seconds(PROFILES[name], calls, tools, speed)
+    STATS["replayed"] += 1
+    STATS["replayed_cut"] += secs > cap_s
+    return secs <= cap_s
+
+
+def load(prefix, metric):
     pat = re.compile(rf"^{re.escape(prefix)}_[sp](\d+)$")  # hist.sh samples: _s1.. or _p1.. (SAMPLE_TAG)
     rows = {}
     for r in map(json.loads, open(ROOT / "results" / "task_runs.jsonl")):
         m = pat.match(str(r.get("run_id")))
         if m:
-            rows[(int(m.group(1)), r["id"])] = r.get("resolved") in (True, "True", 1)
+            rows[(int(m.group(1)), r["id"])] = passed(r, metric)
     tries, passes, per_sample = collections.Counter(), collections.Counter(), collections.Counter()
     for (k, t), ok in rows.items():
         tries[t] += 1
@@ -40,13 +73,15 @@ def main():
     ap.add_argument("b")
     ap.add_argument("--tasks", default="usable")
     ap.add_argument("--split", choices=["all", "train", "holdout"], default="all")
+    ap.add_argument("--metric", choices=["kaggle", "resolved"], default="kaggle")
     x = ap.parse_args()
     holdout = manifest.holdout()
     tasks = [t for t in manifest.ids(x.tasks)
              if x.split == "all" or (t in holdout) == (x.split == "holdout")]
-    (ta, pa, sa), (tb, pb, sb) = load(x.a), load(x.b)
+    (ta, pa, sa), (tb, pb, sb) = load(x.a, x.metric), load(x.b, x.metric)
     both = [t for t in tasks if ta[t] and tb[t]]
-    print(f"{x.split}: {len(tasks)} tasks, {len(both)} tried in both arms")
+    print(f"{x.split}: {len(tasks)} tasks, {len(both)} tried in both arms | metric {x.metric}"
+          + (f" (resolved tries scored: {dict(STATS)})" if x.metric == "kaggle" else ""))
     for name, tr, ps, smp in ((x.a, ta, pa, sa), (x.b, tb, pb, sb)):
         band = collections.Counter("never" if ps[t] == 0 else "always" if ps[t] == tr[t] else "mixed" for t in both)
         print(f"  {name}: passes {sum(ps[t] for t in both)} / {sum(tr[t] for t in both)} runs | per sample "
