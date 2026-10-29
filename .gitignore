@@ -50,6 +50,9 @@ __pycache__/
 *.parquet
 *.ckpt
 *.pt
+# trained LoRA weights (hundreds of MB): keep local / on HF, never in git
+agents/*sft*/adapters/**/*.safetensors
+results/kaggle_speed/**/adapters/**/*.safetensors
 
 # 5) secrets stay ignored even if section 1 is ever loosened
 .env
