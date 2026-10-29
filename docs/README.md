@@ -16,6 +16,7 @@ Focus now: training only (curate SWE data, then RL). Kaggle submissions are park
 | [measured_numbers.md](measured_numbers.md) | Output-token budgets per model, fixed run settings, where the sampling config lives, Kaggle speeds |
 | [pass_histogram_e2b.md](pass_histogram_e2b.md) | E2B pass counts over 8 tries per task: how many tasks are in the mixed band |
 | [outside_data.md](outside_data.md) | Outside task sets and solved-run sets, the adapter we need, graph-tools A/B result, plan for the first outside run |
+| [outside_tasks_judge.md](outside_tasks_judge.md) | task-quality judge on 7,137 SWE-rebench tasks: 60.5% solvable as written, reasons, clean pool, held-out repos, repair pilot (2026-10-25) |
 | [code_graph_builder.md](code_graph_builder.md) | Our code-graph builder: rebuilds all 127 official graphs exactly (nodes, texts, edges) |
 | [embeddings.md](embeddings.md) | The official node embeddings: what they are, why we cannot rebuild them, what they are worth to the agent; decision: random vectors for outside repos |
 | [training_prep.md](training_prep.md) | Local training data on hand, the tools that make it, open training steps |
@@ -34,3 +35,4 @@ Focus now: training only (curate SWE data, then RL). Kaggle submissions are park
   speed + 30 s setup (profiles in `kits/swe-agent/run/kaggle_time_profiles.json`).
 - **Run ledger:** every task run is one row in `results/task_runs.jsonl`, with its settings pinned in the row.
 - **Machine:** RTX 5090 32 GB, 12 CPU cores, 93 GB RAM, 122 GB free disk (2026-10-17), no CUDA compiler.
+- [Sandbox hosting options](sandbox_hosting_options.md) — parked: ephemeral big VM vs Modal vs Cloudflare for task containers (2026-10-27)

@@ -1,0 +1,11 @@
+task,resolved,agent_s,llm_calls,total_tokens,tool_calls,test_exit_code,status,error,wall_s,time_cap_min,server_setting
+fastapi_14786,True,18.6,4,0,2,0,SUCCESS,,18.7,5.5,readme_lora
+rich_3905,False,334.4,21,0,21,-1,SUCCESS,Agent exceeded session timeout (5.5 min),334.4,5.5,readme_lora
+requests_6592,False,331.9,24,0,23,-1,SUCCESS,Agent exceeded session timeout (5.5 min),331.9,5.5,readme_lora
+rich_2943,True,336.2,43,0,42,0,SUCCESS,,336.2,5.5,readme_lora
+requests_7433,False,208.9,11,0,7,1,SUCCESS,,208.9,5.5,readme_lora
+fastapi_14303,False,40.7,8,0,6,2,SUCCESS,,40.8,5.5,readme_lora
+requests_7315,False,334.2,42,0,42,1,SUCCESS,Agent exceeded session timeout (5.5 min),334.2,5.5,readme_lora
+requests_7309,False,183.1,68,0,65,1,SUCCESS,,183.1,5.5,readme_lora
+fastapi_14492,False,246.1,20,0,18,1,SUCCESS,,246.2,5.5,readme_lora
+requests_7502,False,406.2,17,0,17,1,SUCCESS,Agent exceeded session timeout (5.5 min),406.2,5.5,readme_lora

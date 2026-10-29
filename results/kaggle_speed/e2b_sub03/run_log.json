@@ -1,0 +1,16 @@
+{
+  "model": "gemma-4-e2b-it-qat-w4a16-ct",
+  "gpus": "NVIDIA L4",
+  "gpu_count": 4,
+  "server_start_s": {
+    "readme_lora": 409.5
+  },
+  "errors": [],
+  "served": {
+    "base": "/kaggle/input/models/google/gemma-4/other/gemma-4-e2b-it-qat-w4a16-ct/2",
+    "loras": [
+      "main_lora"
+    ]
+  },
+  "minutes_used": 51.8
+}
