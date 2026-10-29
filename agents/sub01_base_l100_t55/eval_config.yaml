@@ -1,0 +1,9 @@
+# First LB candidate (2026-10-23): agents/base_l100 unchanged except max_time_minutes 60 -> 5.5.
+# Why 5.5: the scorer has 12 h for ~120 tasks including sandbox setup. Uncapped, base_l100's traces replayed at the
+# 4x L4 31B+adapter speed predict ~19 h (certain overrun, which fails the whole submission); capped at 5.5 min they
+# predict ~10.2 h (90% range 9.8-10.5 h). 5.5 min = 330 s, the same cap as the local Kaggle clock.
+evaluation:
+  timeout_seconds: 300
+  max_tool_calls: 100
+  max_time_minutes: 5.5
+  max_turns: 500

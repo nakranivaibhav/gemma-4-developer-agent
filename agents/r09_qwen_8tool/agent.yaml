@@ -1,0 +1,13 @@
+name: swe_lean_facts_8tool_qwen
+model: qwen3.8-27b-nvfp4
+instruction: !include prompts/system.md
+tools:
+  - run_command
+  - read_file
+  - edit_file
+  - write_file
+  - get_status
+  - submit_patch
+  - get_code_neighbors
+  - get_code_subgraph
+generate_content_config: !include configs/sampling.yaml

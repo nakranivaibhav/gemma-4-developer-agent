@@ -1,0 +1,7 @@
+# Second LB submission (2026-10-24): agents/base_l100 unchanged except max_time_minutes 60 -> 6 (sub01 used 5.5).
+# User wants 6 min "to see how it behaves". Predicted 120-task total 10.8 h (5.5 min: 10.2 h); replayed solves 32.5% vs 31.7%.
+evaluation:
+  timeout_seconds: 300
+  max_tool_calls: 100
+  max_time_minutes: 6
+  max_turns: 500
