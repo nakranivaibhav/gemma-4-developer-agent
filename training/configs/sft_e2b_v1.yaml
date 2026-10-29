@@ -1,0 +1,29 @@
+# SFT v1: warm start for Gemma 4 E2B before RL.
+# Data: runs/sft/packed.jsonl from `uv run training/sft_data.py all` (165 solved train-task traces,
+# 31B 126 + E2B 39, rendered with the r08_lean_facts prompt and the 8 RL tools).
+run_name: e2b_sft_v1_r64
+data: runs/sft/packed.jsonl
+model_dir: data/external/models/gemma-4-e2b-it-qat-w4a16-ct
+output_dir: runs/sft/e2b_v1
+
+lora:
+  r: 64
+  alpha: 128
+  dropout: 0.05
+  modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  skip_kv_shared: true        # last 20 layers reuse earlier K/V: their k/v LoRA would get no gradient
+
+train:
+  epochs: 2
+  lr: 1.0e-4
+  scheduler: cosine
+  warmup_ratio: 0.03
+  grad_accum: 16              # batch size is 1 packed sequence
+  weight_decay: 0.0
+  max_grad_norm: 1.0
+  seed: 0
+  logit_softcap: 30.0         # E2B final_logit_softcapping
+
+wandb:
+  entity: local-research-group
+  project: gemma 4

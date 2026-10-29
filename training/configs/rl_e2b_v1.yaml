@@ -1,0 +1,40 @@
+# RL v1 for Gemma 4 E2B: on-policy RLOO from the SFT warm start, reward = solved inside the Kaggle clock.
+# Pool: training/rl/pools/e2b_v1.txt = the 24 tune tasks E2B solved at least once (any adapter, 2,414 local tries,
+# 2026-10-26), minus fastapi_14786 (solved 29/29: always a uniform group). Holdout tasks are refused for training.
+# Run: uv run python -m training.rl.loop --config training/configs/rl_e2b_v1.yaml   (detached, under the watchdog)
+name: e2b_v1
+init_adapter: runs/sft/e2b_v1/adapter          # e2b_sft_v1 (2 epochs): sha 67ea0f492938acfc
+base_agent: agents/r09_e2b_8tool_sft            # r08 lean prompt, 8 RL tools, temperature 0.7 (read from here)
+steps: 30
+
+rollout:
+  tasks: training/rl/pools/e2b_v1.txt
+  tries: 8                                      # group size
+  concurrency: 64                               # tries at once on the server
+  spec: ""                                      # plain decoding
+  docker_host: null                             # local Docker; a sandbox VM = its tunnelled socket
+
+algo:
+  adv_estimator: rloo
+  policy_loss: vanilla                          # = REINFORCE with ppo_epochs 1 (ratio exactly 1)
+  loss_agg_mode: seq-mean-token-sum-norm        # sum over a try's tokens / (C * B), Dr. GRPO style
+  loss_scale_factor: 4096
+  count_zero_adv_tries: true
+  ppo_epochs: 1
+
+optim:
+  lr: 5.0e-6
+  max_grad_norm: 1.0
+
+model:
+  max_train_tokens: 32768                       # a 32.7k segment peaks at 28.0 GB (tests/test_gpu.py)
+  log_mismatch: true
+
+eval:
+  every: 5
+  tasks: holdout
+  tries: 3
+
+wandb:
+  entity: local-research-group
+  project: gemma 4

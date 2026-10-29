@@ -1,0 +1,30 @@
+# SFT v2: same recipe as v1 (sft_e2b_v1.yaml), new pool only.
+# Data: runs/sft/e2b_v2/packed.jsonl from `uv run training/sft_data.py all --out runs/sft/e2b_v2` (2026-10-23):
+# 164 solved train-task traces over 46 tasks (31B 122 + E2B 42), 53 made with the student's own r08 prompt (v1: 6),
+# after the submitted-run fix; 213 sequences / 1,068,548 loss tokens (v1: 215 / 1,073,626).
+run_name: e2b_sft_v2_r64
+data: runs/sft/e2b_v2/packed.jsonl
+model_dir: data/external/models/gemma-4-e2b-it-qat-w4a16-ct
+output_dir: runs/sft/e2b_v2_train
+
+lora:
+  r: 64
+  alpha: 128
+  dropout: 0.05
+  modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+  skip_kv_shared: true        # last 20 layers reuse earlier K/V: their k/v LoRA would get no gradient
+
+train:
+  epochs: 2
+  lr: 1.0e-4
+  scheduler: cosine
+  warmup_ratio: 0.03
+  grad_accum: 16              # batch size is 1 packed sequence
+  weight_decay: 0.0
+  max_grad_norm: 1.0
+  seed: 0
+  logit_softcap: 30.0         # E2B final_logit_softcapping
+
+wandb:
+  entity: local-research-group
+  project: gemma 4
